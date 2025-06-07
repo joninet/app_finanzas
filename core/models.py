@@ -86,13 +86,16 @@ class ConsumoDiario(models.Model):
         super().save(*args, **kwargs)
         
         # Si es un pago con tarjeta de crédito en cuotas, crear consumos fijos mensuales
+        # Comenzando desde el mes siguiente al de la fecha del consumo
         if self.es_credito and self.cuotas > 1 and self.tipo_pago.es_tarjeta_credito:
             monto_por_cuota = self.monto / self.cuotas
             fecha_actual = self.fecha
             
+            # Para tarjetas de crédito, comenzamos en el mes siguiente
             for i in range(self.cuotas):
-                mes_cuota = ((fecha_actual.month + i - 1) % 12) + 1
-                año_cuota = fecha_actual.year + ((fecha_actual.month + i - 1) // 12)
+                # Sumamos 1 mes adicional para que la primera cuota sea el mes siguiente
+                mes_cuota = ((fecha_actual.month + i) % 12) + 1  # +i en lugar de +(i-1)
+                año_cuota = fecha_actual.year + ((fecha_actual.month + i) // 12)  # Sin -1
                 descripcion_cuota = f"Cuota {i+1}/{self.cuotas} - {self.descripcion or 'Consumo con tarjeta'}"
                 
                 try:
