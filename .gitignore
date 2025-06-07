@@ -30,6 +30,9 @@ media/
 venv/
 ENV/
 
+# Static files
+# staticfiles/  # Comentamos esta línea para incluir los archivos estáticos en el despliegue
+
 # Environment variables
 .env
 

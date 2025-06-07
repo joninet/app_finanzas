@@ -1,1 +1,1 @@
-web: gunicorn finanzas_personales.wsgi:application
+web: gunicorn finanzas_personales.wsgi:application --log-file - --log-level debug

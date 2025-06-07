@@ -2,8 +2,8 @@ services:
   - type: web
     name: finanzas-personales
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn finanzas_personales.wsgi:application
+    buildCommand: ./build.sh
+    startCommand: gunicorn finanzas_personales.wsgi:application --log-file - --log-level debug
     envVars:
       - key: DATABASE_URL
         sync: false
