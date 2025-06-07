@@ -8,21 +8,48 @@ from datetime import datetime
 
 
 def consumo_diario_list(request):
-    # Filtramos por fecha si se proporciona en la URL
+    # Obtener parámetros de filtro
     fecha_desde = request.GET.get('fecha_desde')
     fecha_hasta = request.GET.get('fecha_hasta')
+    categoria_id = request.GET.get('categoria')
     
+    # Configurar filtro por defecto (mes actual si no hay filtros)
+    if not fecha_desde and not fecha_hasta and not categoria_id:
+        hoy = timezone.now().date()
+        primer_dia_mes = datetime(hoy.year, hoy.month, 1).date()
+        fecha_desde = primer_dia_mes.isoformat()
+    
+    # Iniciar con todos los consumos
     consumos = ConsumoDiario.objects.all()
     
+    # Aplicar filtros
     if fecha_desde:
-        consumos = consumos.filter(fecha__gte=fecha_desde)
+        try:
+            consumos = consumos.filter(fecha__gte=fecha_desde)
+        except (ValueError, TypeError):
+            messages.warning(request, 'Formato de fecha inválido para fecha desde')
     
     if fecha_hasta:
-        consumos = consumos.filter(fecha__lte=fecha_hasta)
+        try:
+            consumos = consumos.filter(fecha__lte=fecha_hasta)
+        except (ValueError, TypeError):
+            messages.warning(request, 'Formato de fecha inválido para fecha hasta')
     
-    # Ordenados por fecha descendente (más reciente primero)
+    if categoria_id and categoria_id.isdigit():
+        consumos = consumos.filter(categoria_id=categoria_id)
+    
+    # Ordenar por fecha descendente (más reciente primero)
     consumos = consumos.order_by('-fecha')
     
+    # Calcular totales
+    total_consumos = sum(c.monto for c in consumos)
+    total_efectivo = sum(c.monto for c in consumos if not c.tipo_pago.es_tarjeta_credito)
+    total_credito = sum(c.monto for c in consumos if c.tipo_pago.es_tarjeta_credito)
+    
+    # Obtener categorías para el filtro
+    categorias = Categoria.objects.all().order_by('nombre')
+    
+    # Paginación
     paginator = Paginator(consumos, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -32,7 +59,12 @@ def consumo_diario_list(request):
         'titulo': 'Consumos Diarios',
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
-        'fecha_actual': timezone.now().date().isoformat()
+        'fecha_actual': timezone.now().date().isoformat(),
+        'categorias': categorias,
+        'categoria_id': categoria_id,
+        'total_consumos': total_consumos,
+        'total_efectivo': total_efectivo,
+        'total_credito': total_credito
     }
     
     return render(request, 'core/consumo_diario/list.html', context)

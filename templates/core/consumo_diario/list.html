@@ -96,8 +96,18 @@
                         <tfoot>
                             {% if page_obj %}
                             <tr class="table-primary">
-                                <td colspan="4"><strong>Total</strong></td>
+                                <td colspan="4"><strong>Total General</strong></td>
                                 <td class="text-end text-danger"><strong>${{ total_consumos|floatformat:2 }}</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr class="table-success">
+                                <td colspan="4"><strong>Total Efectivo/Débito</strong></td>
+                                <td class="text-end text-success"><strong>${{ total_efectivo|floatformat:2 }}</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr class="table-warning">
+                                <td colspan="4"><strong>Total Crédito</strong></td>
+                                <td class="text-end text-danger"><strong>${{ total_credito|floatformat:2 }}</strong></td>
                                 <td colspan="2"></td>
                             </tr>
                             {% endif %}
@@ -160,6 +170,29 @@
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Asegurar fechas por defecto si están vacías
+        const fechaDesdeEl = document.getElementById('fecha_desde');
+        const fechaHastaEl = document.getElementById('fecha_hasta');
+        
+        // Si no hay fecha desde, establecer primer día del mes actual
+        if (!fechaDesdeEl.value) {
+            const hoy = new Date();
+            const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            fechaDesdeEl.value = primerDiaMes.toISOString().split('T')[0];
+        }
+        
+        // Si no hay fecha hasta, establecer el día actual
+        if (!fechaHastaEl.value) {
+            const hoy = new Date();
+            fechaHastaEl.value = hoy.toISOString().split('T')[0];
+        }
+        
+        // Auto-enviar formulario al cambiar valores
+        const categoriaSelect = document.querySelector('select[name="categoria"]');
+        categoriaSelect.addEventListener('change', function() {
+            this.form.submit();
         });
         
         // Resetear filtros
