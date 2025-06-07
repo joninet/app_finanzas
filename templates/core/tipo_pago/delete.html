@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Tipo de Pago - Finanzas Personales{% endblock %}
+
+{% block page_title %}Eliminar Tipo de Pago{% endblock %}
+
+{% block content %}
+<div class="row mb-4 justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <h5 class="alert-heading">¡Atención!</h5>
+                    <p>Estás a punto de eliminar el tipo de pago: <strong>{{ tipo_pago.nombre }}</strong>.</p>
+                    <p class="mb-0">Esta acción no se puede deshacer y podría afectar a los ingresos y consumos asociados a este tipo de pago.</p>
+                </div>
+                
+                <div class="details mb-4">
+                    <h6>Detalles del Tipo de Pago:</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>Nombre:</strong> {{ tipo_pago.nombre }}</li>
+                        <li class="list-group-item"><strong>Descripción:</strong> {{ tipo_pago.descripcion|default:"No disponible" }}</li>
+                        <li class="list-group-item">
+                            <strong>Tipo:</strong>
+                            {% if tipo_pago.es_tarjeta_credito %}
+                                <span class="badge bg-info">Tarjeta de Crédito</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Estándar</span>
+                            {% endif %}
+                        </li>
+                        <li class="list-group-item"><strong>Fecha de Creación:</strong> {{ tipo_pago.fecha_creacion|date:"d/m/Y H:i" }}</li>
+                    </ul>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'tipo_pago_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i> Eliminar Definitivamente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

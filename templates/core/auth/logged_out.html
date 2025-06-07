@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Sesión Cerrada - Finanzas Personales{% endblock %}
+
+{% block page_title %}Sesión Cerrada{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0"><i class="fas fa-sign-out-alt me-2"></i>Has cerrado sesión</h5>
+            </div>
+            <div class="card-body p-4 text-center">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+                    <h4>¡Gracias por usar Finanzas Personales!</h4>
+                    <p class="text-muted">Has cerrado sesión correctamente.</p>
+                </div>
+                <a href="{% url 'login' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>Volver a iniciar sesión
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

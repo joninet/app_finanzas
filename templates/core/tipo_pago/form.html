@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Finanzas Personales{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4 justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    {% if tipo_pago %}
+                    <i class="fas fa-edit me-2"></i>Editar Tipo de Pago
+                    {% else %}
+                    <i class="fas fa-plus me-2"></i>Nuevo Tipo de Pago
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ tipo_pago.nombre|default:'' }}" required autofocus>
+                        <div class="invalid-feedback">
+                            El nombre es obligatorio
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ tipo_pago.descripcion|default:'' }}</textarea>
+                        <div class="form-text">Opcional: añade detalles sobre este tipo de pago</div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="es_tarjeta_credito" name="es_tarjeta_credito" {% if tipo_pago.es_tarjeta_credito %}checked{% endif %}>
+                        <label class="form-check-label" for="es_tarjeta_credito">Es tarjeta de crédito</label>
+                        <div class="form-text">Marca esta opción si este tipo de pago es una tarjeta de crédito para habilitar pagos en cuotas</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'tipo_pago_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Volver
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Validación de formulario
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        Array.from(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Consumo Fijo - Finanzas Personales{% endblock %}
+
+{% block page_title %}Eliminar Consumo Fijo{% endblock %}
+
+{% block content %}
+<div class="row mb-4 justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <h5 class="alert-heading">¡Atención!</h5>
+                    <p>Estás a punto de eliminar el consumo fijo mensual de <strong>{{ consumo_fijo.categoria.nombre }}</strong> por <strong>${{ consumo_fijo.monto|floatformat:2 }}</strong>.</p>
+                    <p class="mb-0">Esta acción no se puede deshacer y afectará al balance de tus finanzas.</p>
+                </div>
+                
+                <div class="details mb-4">
+                    <h6>Detalles del Consumo Fijo:</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>Categoría:</strong> {{ consumo_fijo.categoria.nombre }}</li>
+                        <li class="list-group-item"><strong>Tipo de Pago:</strong> {{ consumo_fijo.tipo_pago.nombre }}</li>
+                        <li class="list-group-item"><strong>Monto:</strong> ${{ consumo_fijo.monto|floatformat:2 }}</li>
+                        <li class="list-group-item"><strong>Período:</strong> {{ consumo_fijo.mes }}/{{ consumo_fijo.año }}</li>
+                        <li class="list-group-item">
+                            <strong>Estado:</strong>
+                            {% if consumo_fijo.pagado %}
+                            <span class="badge bg-success">Pagado</span>
+                            {% if consumo_fijo.fecha_pago %}
+                            ({{ consumo_fijo.fecha_pago|date:"d/m/Y" }})
+                            {% endif %}
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                            {% endif %}
+                        </li>
+                        <li class="list-group-item"><strong>Descripción:</strong> {{ consumo_fijo.descripcion|default:"No disponible" }}</li>
+                    </ul>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'consumo_fijo_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i> Eliminar Definitivamente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Consumo Diario - Finanzas Personales{% endblock %}
+
+{% block page_title %}Eliminar Consumo Diario{% endblock %}
+
+{% block content %}
+<div class="row mb-4 justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <h5 class="alert-heading">¡Atención!</h5>
+                    <p>Estás a punto de eliminar el consumo: <strong>{{ consumo_diario.categoria.nombre }}</strong> por <strong>${{ consumo_diario.monto|floatformat:2 }}</strong>.</p>
+                    {% if consumo_diario.es_credito %}
+                    <p><strong>IMPORTANTE:</strong> Este consumo está asociado a pagos en cuotas. Al eliminarlo, <strong>NO</strong> se eliminarán automáticamente los consumos fijos mensuales ya generados. Debes eliminarlos manualmente si así lo deseas.</p>
+                    {% endif %}
+                    <p class="mb-0">Esta acción no se puede deshacer y afectará al balance de tus finanzas.</p>
+                </div>
+                
+                <div class="details mb-4">
+                    <h6>Detalles del Consumo:</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>Fecha:</strong> {{ consumo_diario.fecha|date:"d/m/Y" }}</li>
+                        <li class="list-group-item"><strong>Categoría:</strong> {{ consumo_diario.categoria.nombre }}</li>
+                        <li class="list-group-item"><strong>Tipo de Pago:</strong> {{ consumo_diario.tipo_pago.nombre }}</li>
+                        <li class="list-group-item"><strong>Monto:</strong> ${{ consumo_diario.monto|floatformat:2 }}</li>
+                        {% if consumo_diario.es_credito %}
+                        <li class="list-group-item"><strong>Cuotas:</strong> {{ consumo_diario.cuotas }}</li>
+                        {% endif %}
+                        <li class="list-group-item"><strong>Descripción:</strong> {{ consumo_diario.descripcion|default:"No disponible" }}</li>
+                    </ul>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'consumo_diario_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i> Eliminar Definitivamente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

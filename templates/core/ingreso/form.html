@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Finanzas Personales{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4 justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    {% if ingreso %}
+                    <i class="fas fa-edit me-2"></i>Editar Ingreso
+                    {% else %}
+                    <i class="fas fa-plus me-2"></i>Nuevo Ingreso
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- El campo nombre se ha eliminado ya que no existe en el modelo -->
+                    
+                    <div class="mb-3">
+                        <label for="tipo_pago" class="form-label">Tipo de Pago *</label>
+                        <select class="form-select" id="tipo_pago" name="tipo_pago" required>
+                            <option value="">-- Seleccionar tipo de pago --</option>
+                            {% for tipo_pago in tipos_pago %}
+                            <option value="{{ tipo_pago.id }}" {% if ingreso.tipo_pago.id == tipo_pago.id %}selected{% endif %}>{{ tipo_pago.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Debe seleccionar un tipo de pago
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="monto" class="form-label">Monto *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="monto" name="monto" value="{{ ingreso.monto|default:'' }}" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="invalid-feedback">
+                            El monto debe ser mayor a cero
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fecha" class="form-label">Fecha *</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" value="{% if ingreso.fecha %}{{ ingreso.fecha|date:'Y-m-d' }}{% else %}{{ fecha_actual }}{% endif %}" required>
+                        <div class="invalid-feedback">
+                            Debe seleccionar una fecha válida
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ ingreso.descripcion|default:'' }}</textarea>
+                        <div class="form-text">Opcional: añade detalles sobre este ingreso</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'ingreso_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Volver
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Validación de formulario
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        Array.from(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+{% endblock %}
