@@ -253,11 +253,54 @@ def consumo_diario_update(request, pk):
 def consumo_diario_delete(request, pk):
     consumo_diario = get_object_or_404(ConsumoDiario, pk=pk)
     
-    # Advertencia: eliminar un consumo en cuotas no eliminará los consumos fijos mensuales ya generados
+    # Determinar si es una cuota o un consumo con cuotas
+    es_cuota = consumo_diario.consumo_original is not None
+    es_consumo_con_cuotas = consumo_diario.es_credito and consumo_diario.cuotas > 1
+    
+    # Buscar cuotas relacionadas
+    cuotas_relacionadas = []
+    if es_cuota:
+        # Si es una cuota, obtener las demás cuotas y el original
+        cuotas_relacionadas = ConsumoDiario.objects.filter(
+            consumo_original=consumo_diario.consumo_original
+        ).exclude(pk=pk)
+        consumo_original = consumo_diario.consumo_original
+    elif es_consumo_con_cuotas:
+        # Si es un consumo original con cuotas, obtener todas sus cuotas
+        cuotas_relacionadas = ConsumoDiario.objects.filter(
+            consumo_original=consumo_diario
+        )
+        consumo_original = consumo_diario
+    
+    # Contar cuotas relacionadas
+    total_cuotas = len(cuotas_relacionadas) + (1 if es_cuota else 0)
     
     if request.method == 'POST':
-        consumo_diario.delete()
-        messages.success(request, 'Consumo diario eliminado correctamente')
+        # Determinar qué eliminar según la elección del usuario
+        eliminar_todo = request.POST.get('eliminar_todo') == 'on'
+        
+        if eliminar_todo and (es_cuota or es_consumo_con_cuotas):
+            # Eliminar todas las cuotas y el consumo original
+            if es_cuota:
+                # Eliminar todas las otras cuotas primero
+                for cuota in cuotas_relacionadas:
+                    cuota.delete()
+                # Eliminar el consumo original al final
+                if consumo_original:
+                    consumo_original.delete()
+            elif es_consumo_con_cuotas:
+                # Eliminar todas las cuotas primero
+                for cuota in cuotas_relacionadas:
+                    cuota.delete()
+                # Eliminar el consumo original
+                consumo_diario.delete()
+            
+            messages.success(request, f'Se ha eliminado el consumo y todas sus cuotas ({total_cuotas + 1} registros)')
+        else:
+            # Eliminar solo este consumo
+            consumo_diario.delete()
+            messages.success(request, 'Consumo diario eliminado correctamente')
+        
         return redirect('consumo_diario_list')
     
     context = {

@@ -15,9 +15,16 @@
                 <div class="alert alert-warning mb-4">
                     <h5 class="alert-heading">¡Atención!</h5>
                     <p>Estás a punto de eliminar el consumo: <strong>{{ consumo_diario.categoria.nombre }}</strong> por <strong>${{ consumo_diario.monto|floatformat:2 }}</strong>.</p>
-                    {% if consumo_diario.es_credito %}
-                    <p><strong>IMPORTANTE:</strong> Este consumo está asociado a pagos en cuotas. Al eliminarlo, <strong>NO</strong> se eliminarán automáticamente los consumos fijos mensuales ya generados. Debes eliminarlos manualmente si así lo deseas.</p>
+                    
+                    {% if consumo_diario.consumo_original or consumo_diario.cuotas_relacionadas.count > 0 %}
+                    <p><strong>IMPORTANTE:</strong> Este consumo es parte de un pago en cuotas.</p>
+                    {% if consumo_diario.consumo_original %}
+                    <p>Este es una de las cuotas de un consumo con tarjeta. Puedes eliminar solo esta cuota o todas las cuotas relacionadas y el consumo original.</p>
+                    {% elif consumo_diario.cuotas_relacionadas.count > 0 %}
+                    <p>Este es un consumo original que tiene {{ consumo_diario.cuotas_relacionadas.count }} cuotas relacionadas. Puedes eliminar solo este consumo o todas sus cuotas.</p>
                     {% endif %}
+                    {% endif %}
+                    
                     <p class="mb-0">Esta acción no se puede deshacer y afectará al balance de tus finanzas.</p>
                 </div>
                 
@@ -37,6 +44,19 @@
                 
                 <form method="post">
                     {% csrf_token %}
+                    
+                    {% if consumo_diario.consumo_original or consumo_diario.cuotas_relacionadas.count > 0 %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="eliminar_todo" name="eliminar_todo">
+                        <label class="form-check-label" for="eliminar_todo">
+                            <strong>Eliminar todas las cuotas relacionadas</strong>
+                        </label>
+                        <div class="form-text text-danger">
+                            Al marcar esta opción se eliminarán todas las cuotas y el consumo original de una sola vez.
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <div class="d-flex justify-content-between">
                         <a href="{% url 'consumo_diario_list' %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-1"></i> Cancelar
