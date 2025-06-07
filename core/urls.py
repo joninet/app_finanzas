@@ -7,6 +7,7 @@ from .views import (
     consumo_fijo_list, consumo_fijo_create, consumo_fijo_update, consumo_fijo_delete, consumo_fijo_toggle,
     consumo_diario_list, consumo_diario_create, consumo_diario_update, consumo_diario_delete
 )
+from .views.consumo_diario_mobile import consumo_diario_mobile
 
 urlpatterns = [
     # Home
@@ -42,4 +43,5 @@ urlpatterns = [
     path('consumo-diario/crear/', consumo_diario_create, name='consumo_diario_create'),
     path('consumo-diario/editar/<int:pk>/', consumo_diario_update, name='consumo_diario_update'),
     path('consumo-diario/eliminar/<int:pk>/', consumo_diario_delete, name='consumo_diario_delete'),
+    path('consumo-diario/mobile/', consumo_diario_mobile, name='consumo_diario_mobile'),
 ]

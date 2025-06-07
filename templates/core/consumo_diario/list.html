@@ -161,6 +161,12 @@
         </div>
     </div>
 </div>
+<!-- Botón de acceso rápido a versión móvil -->
+<div class="mobile-quick-access">
+    <a href="{% url 'consumo_diario_mobile' %}" class="btn btn-success" data-bs-toggle="tooltip" title="Versión móvil rápida">
+        <i class="fas fa-mobile-alt mobile-icon"></i>
+    </a>
+</div>
 {% endblock %}
 
 {% block extra_js %}
