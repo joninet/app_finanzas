@@ -112,12 +112,13 @@ class ConsumoDiario(models.Model):
                 # Asegurar que la descripción tenga un valor por defecto
                 desc_base = self.descripcion if self.descripcion else 'Consumo con tarjeta'
                 
-                # Para tarjetas de crédito, generamos solo cuotas-1 consumos adicionales
-                # Empezamos desde la segunda cuota (1) ya que la primera es el consumo original
-                for i in range(1, self.cuotas):
+                # Para tarjetas de crédito, generamos todas las cuotas individuales
+                # pero en los meses correctos (1ra cuota en el mes siguiente, etc)
+                for num_cuota in range(1, self.cuotas + 1):
                     # Calcular la fecha exacta para el mes/año de la cuota
-                    mes_cuota = ((fecha_actual.month + i) % 12) or 12  # Para que diciembre sea 12, no 0
-                    año_cuota = fecha_actual.year + ((fecha_actual.month + i - 1) // 12)
+                    # Las cuotas aparecen desde el mes siguiente al de la compra
+                    mes_cuota = ((fecha_actual.month + num_cuota) % 12) or 12  # Para que diciembre sea 12, no 0
+                    año_cuota = fecha_actual.year + ((fecha_actual.month + num_cuota - 1) // 12)
                     
                     # Crear una fecha para el mismo día del mes siguiente
                     try:
@@ -135,7 +136,8 @@ class ConsumoDiario(models.Model):
                         else:  # Meses con 31 días
                             fecha_cuota = date(año_cuota, mes_cuota, 31)
                     
-                    descripcion_cuota = f"Cuota {i+1}/{self.cuotas} - {desc_base}"
+                    fecha_str = fecha_actual.strftime('%d/%m/%Y')
+                    descripcion_cuota = f"Cuota {num_cuota}/{self.cuotas} - {desc_base} (Compra: {fecha_str})"
                     
                     # Crear un nuevo consumo diario para esta cuota
                     from django.db import transaction
