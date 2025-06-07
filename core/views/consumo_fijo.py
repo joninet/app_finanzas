@@ -8,37 +8,63 @@ from ..models import ConsumoFijoMensual, Categoria, TipoPago
 
 
 def consumo_fijo_list(request):
-    # Filtramos por mes y año si se proporciona en la URL
-    mes = request.GET.get('mes', timezone.now().month)
-    año = request.GET.get('año', timezone.now().year)
+    # Filtrar por mes y año
+    fecha_filtro = request.GET.get('mes', None)
+    pagado_filtro = request.GET.get('pagado', None)
     
-    try:
-        mes = int(mes)
-        año = int(año)
-    except ValueError:
-        mes = timezone.now().month
-        año = timezone.now().year
+    # Mes y año por defecto (actual)
+    mes_actual = timezone.now().month
+    año_actual = timezone.now().year
     
+    # Procesar filtro de fecha si existe
+    if fecha_filtro:
+        try:
+            fecha_partes = fecha_filtro.split('-')
+            if len(fecha_partes) == 2:
+                año_actual = int(fecha_partes[0])
+                mes_actual = int(fecha_partes[1])
+        except (ValueError, IndexError):
+            pass
+    
+    # Filtrar por mes y año
+    filtros = {
+        'mes': mes_actual,
+        'año': año_actual
+    }
+    
+    # Aplicar filtro de pagado/pendiente si existe
+    if pagado_filtro in ['0', '1']:
+        filtros['pagado'] = (pagado_filtro == '1')
+    
+    # Obtener todos los consumos del mes filtrado (sin paginación)
     consumos_fijos = ConsumoFijoMensual.objects.filter(
-        mes=mes, 
-        año=año
+        **filtros
     ).order_by('pagado', 'categoria')
     
-    paginator = Paginator(consumos_fijos, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    # Calcular totales
+    total_consumos = sum(c.monto for c in consumos_fijos)
+    total_pagado = sum(c.monto for c in consumos_fijos if c.pagado)
+    total_pendiente = total_consumos - total_pagado
+    
+    # Obtener nombre del mes para mostrar
+    mes_nombre = datetime(2000, mes_actual, 1).strftime('%B').capitalize()
     
     # Generar lista de meses y años para el selector
     meses = [(i, datetime(2000, i, 1).strftime('%B')) for i in range(1, 13)]
     años = range(timezone.now().year - 2, timezone.now().year + 3)
     
     context = {
-        'page_obj': page_obj,
+        'consumos_fijos': consumos_fijos,
         'titulo': 'Consumos Fijos Mensuales',
-        'mes_actual': mes,
-        'año_actual': año,
+        'mes_actual': mes_actual,
+        'año_actual': año_actual,
+        'mes_nombre': mes_nombre,
         'meses': meses,
-        'años': años
+        'años': años,
+        'total_consumos': total_consumos,
+        'total_pagado': total_pagado,
+        'total_pendiente': total_pendiente,
+        'pagado': pagado_filtro
     }
     
     return render(request, 'core/consumo_fijo/list.html', context)
