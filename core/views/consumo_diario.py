@@ -42,6 +42,10 @@ def consumo_diario_list(request):
     # Aplicar filtro de categoría si existe
     if categoria_id and categoria_id.isdigit():
         consumos = consumos.filter(categoria_id=categoria_id)
+        
+    # Excluir los consumos originales con tarjeta de crédito en cuotas
+    # ya que estos se verán reflejados como cuotas en los meses siguientes
+    consumos = consumos.exclude(es_credito=True, cuotas__gt=1)
     
     # Ordenar por fecha descendente (más reciente primero)
     consumos = consumos.order_by('-fecha')

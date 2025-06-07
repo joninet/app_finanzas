@@ -86,16 +86,23 @@ class ConsumoDiario(models.Model):
         # Primero guardamos el objeto
         is_new = self.pk is None  # Verificar si es un objeto nuevo o una edición
         created_from_credit_card = getattr(self, '_created_from_credit_card', False)
+        
+        # Imprimir para debug
+        print(f"\nINICIO SAVE: ConsumoDiario ID={self.pk}, nuevo={is_new}, credito={self.es_credito}, cuotas={self.cuotas}, created_from_cc={created_from_credit_card}")
+        
         super().save(*args, **kwargs)
         
         # Si es un pago con tarjeta de crédito en cuotas, crear consumos diarios para los meses siguientes
         # Comenzando desde el mes siguiente al de la fecha del consumo
         # Solo procesamos cuando es nuevo Y no es una cuota creada por otro consumo
         if is_new and self.es_credito and self.cuotas > 1 and self.tipo_pago and self.tipo_pago.es_tarjeta_credito and not created_from_credit_card:
+            print(f"PROCESANDO CUOTAS: Consumo ID={self.pk}, monto={self.monto}, cuotas={self.cuotas}")
+            
             try:
                 # Redondear a 2 decimales para evitar errores de precisión
                 monto_por_cuota = round(float(self.monto) / int(self.cuotas), 2)
                 fecha_actual = self.fecha
+                print(f"DETALLE: monto_por_cuota={monto_por_cuota}, fecha_actual={fecha_actual}")
                 
                 # Asegurar que la descripción tenga un valor por defecto
                 desc_base = self.descripcion if self.descripcion else 'Consumo con tarjeta'
@@ -108,11 +115,15 @@ class ConsumoDiario(models.Model):
                         mes_cuota = ((fecha_actual.month + i) % 12) + 1  # +i en lugar de +(i-1)
                         año_cuota = fecha_actual.year + ((fecha_actual.month + i) // 12)  # Sin -1
                         
+                        print(f"CUOTA {i+1}: mes={mes_cuota}, año={año_cuota}")
+                        
                         # Crear una fecha para el mismo día del mes siguiente
                         from datetime import date
                         try:
                             fecha_cuota = date(año_cuota, mes_cuota, fecha_actual.day)
-                        except ValueError:
+                            print(f"FECHA CUOTA: {fecha_cuota}")
+                        except ValueError as e:
+                            print(f"ERROR FECHA: {str(e)}")
                             # Si el día no existe en el mes (ej. 31 de febrero), usar el último día del mes
                             if mes_cuota == 2:
                                 # Febrero
@@ -124,31 +135,38 @@ class ConsumoDiario(models.Model):
                                 fecha_cuota = date(año_cuota, mes_cuota, 30)
                             else:  # Meses con 31 días
                                 fecha_cuota = date(año_cuota, mes_cuota, 31)
+                            print(f"FECHA CUOTA CORREGIDA: {fecha_cuota}")
                         
                         descripcion_cuota = f"Cuota {i+1}/{self.cuotas} - {desc_base}"
                         
                         # Crear un nuevo consumo diario para esta cuota
                         from django.db import transaction
-                        with transaction.atomic():
-                            # Usamos transaction.atomic para evitar llamadas recursivas al save()
-                            nuevo_consumo = ConsumoDiario(
-                                categoria=self.categoria,
-                                tipo_pago=self.tipo_pago,
-                                monto=monto_por_cuota,
-                                fecha=fecha_cuota,
-                                descripcion=descripcion_cuota,
-                                es_credito=False,  # No es crédito para evitar recursividad
-                                cuotas=1           # No tiene cuotas para evitar recursividad
-                            )
-                            # Marcar que este consumo fue creado por otro consumo con tarjeta
-                            # para evitar recursividad
-                            setattr(nuevo_consumo, '_created_from_credit_card', True)
-                            nuevo_consumo.save()
+                        try:
+                            with transaction.atomic():
+                                # Usamos transaction.atomic para evitar llamadas recursivas al save()
+                                nuevo_consumo = ConsumoDiario(
+                                    categoria=self.categoria,
+                                    tipo_pago=self.tipo_pago,
+                                    monto=monto_por_cuota,
+                                    fecha=fecha_cuota,
+                                    descripcion=descripcion_cuota,
+                                    es_credito=False,  # No es crédito para evitar recursividad
+                                    cuotas=1           # No tiene cuotas para evitar recursividad
+                                )
+                                # Marcar que este consumo fue creado por otro consumo con tarjeta
+                                # para evitar recursividad
+                                setattr(nuevo_consumo, '_created_from_credit_card', True)
+                                nuevo_consumo.save()
+                                print(f"CUOTA CREADA EXITOSAMENTE: ID={nuevo_consumo.pk}, fecha={nuevo_consumo.fecha}, monto={nuevo_consumo.monto}")
+                        except Exception as e:
+                            print(f"ERROR EN TRANSACCIÓN: {str(e)}")
+                            raise
                             
                     except Exception as e:
                         # Capturar errores por cuota pero continuar con las demás
-                        print(f"Error procesando cuota {i+1}: {str(e)}")
+                        print(f"ERROR PROCESANDO CUOTA {i+1}: {str(e)}")
+                print("CUOTAS PROCESADAS CORRECTAMENTE")
             except Exception as e:
                 # Capturar cualquier error en el proceso global de cuotas
-                print(f"Error general procesando cuotas: {str(e)}")
+                print(f"ERROR GENERAL PROCESANDO CUOTAS: {str(e)}")
                 # El consumo diario ya se guardó, así que no afecta su creación
