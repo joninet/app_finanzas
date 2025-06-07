@@ -85,65 +85,70 @@ def consumo_diario_list(request):
     return render(request, 'core/consumo_diario/list.html', context)
 
 
+@login_required
 def consumo_diario_create(request):
-    tipos_pago = TipoPago.objects.all().order_by('nombre')
-    categorias = Categoria.objects.all().order_by('nombre')
+    # Obtener los tipos de pago y categorías disponibles
+    tipos_pago = TipoPago.objects.all()
+    categorias = Categoria.objects.all()
     
     if request.method == 'POST':
         try:
-            # Obtener datos del formulario
+            # Obtener valores del formulario
             tipo_pago_id = request.POST.get('tipo_pago')
             categoria_id = request.POST.get('categoria')
-            monto = request.POST.get('monto', '')
-            fecha = request.POST.get('fecha') or timezone.now().date()
-            descripcion = request.POST.get('descripcion', '')
-            es_credito = request.POST.get('es_credito') == 'on'
+            monto = request.POST.get('monto')
+            fecha_str = request.POST.get('fecha')
+            descripcion = request.POST.get('descripcion')
+            es_credito = 'es_credito' in request.POST
             cuotas = request.POST.get('cuotas', '1')
             
-            # Realizar validaciones
-            if not tipo_pago_id:
-                messages.error(request, 'Debe seleccionar un tipo de pago')
-                return redirect('consumo_diario_create')
-                
-            if not categoria_id:
-                messages.error(request, 'Debe seleccionar una categoría')
+            # Validar valores
+            if not tipo_pago_id or not categoria_id or not monto or not fecha_str:
+                messages.error(request, 'Faltan campos requeridos')
                 return redirect('consumo_diario_create')
             
+            # Convertir monto a decimal
             try:
-                tipo_pago = TipoPago.objects.get(pk=tipo_pago_id)
-            except TipoPago.DoesNotExist:
-                messages.error(request, f'El tipo de pago seleccionado (ID: {tipo_pago_id}) no existe')
-                return redirect('consumo_diario_create')
-                
-            try:
-                categoria = Categoria.objects.get(pk=categoria_id)
-            except Categoria.DoesNotExist:
-                messages.error(request, f'La categoría seleccionada (ID: {categoria_id}) no existe')
-                return redirect('consumo_diario_create')
-            
-            try:
-                monto = float(monto.replace(',', '.')) if monto else 0
+                monto = float(monto.replace(',', '.') if isinstance(monto, str) else monto)
+                if monto <= 0:
+                    messages.error(request, 'El monto debe ser mayor a cero')
+                    return redirect('consumo_diario_create')
             except ValueError:
                 messages.error(request, f'El monto ingresado "{monto}" no es un valor numérico válido')
                 return redirect('consumo_diario_create')
             
+            # Convertir cuotas a entero
             try:
-                cuotas = int(cuotas) if cuotas else 1
+                cuotas = int(cuotas)
+                if es_credito and cuotas <= 0:
+                    messages.error(request, 'El número de cuotas debe ser mayor a cero')
+                    return redirect('consumo_diario_create')
             except ValueError:
                 messages.error(request, f'Las cuotas ingresadas "{cuotas}" no son un número válido')
                 return redirect('consumo_diario_create')
-            
-            if monto <= 0:
-                messages.error(request, 'El monto debe ser mayor a cero')
+                
+            # Convertir fecha string a objeto date
+            try:
+                from datetime import datetime
+                # Parsear la fecha como YYYY-MM-DD
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                print(f"Fecha convertida: {fecha}, tipo: {type(fecha)}")
+            except Exception as e:
+                print(f"Error convirtiendo fecha: {str(e)}, fecha recibida: {fecha_str}")
+                messages.error(request, f'Formato de fecha inválido: {fecha_str}')
                 return redirect('consumo_diario_create')
             
-            if es_credito and tipo_pago.es_tarjeta_credito and cuotas <= 0:
-                messages.error(request, 'El número de cuotas debe ser mayor a cero')
+            # Obtener objetos relacionados
+            try:
+                tipo_pago = TipoPago.objects.get(id=tipo_pago_id)
+                categoria = Categoria.objects.get(id=categoria_id)
+            except (TipoPago.DoesNotExist, Categoria.DoesNotExist):
+                messages.error(request, 'Tipo de pago o categoría no válidos')
                 return redirect('consumo_diario_create')
             
             # Crear el consumo diario con manejo de excepciones
             try:
-                consumo = ConsumoDiario.objects.create(
+                consumo = ConsumoDiario(
                     tipo_pago=tipo_pago,
                     categoria=categoria,
                     monto=monto,
@@ -153,12 +158,15 @@ def consumo_diario_create(request):
                     cuotas=cuotas if es_credito and tipo_pago.es_tarjeta_credito else 1
                 )
                 
+                # Guardar el consumo (esto activará el método save() del modelo)
+                consumo.save()
+                
                 # Para tarjeta de crédito en cuotas, mostrar mensaje detallado
                 if es_credito and tipo_pago.es_tarjeta_credito and cuotas > 1:
                     messages.success(
                         request, 
                         f'Consumo con tarjeta de crédito registrado correctamente. '
-                        f'Se han generado {cuotas} cuotas de ${round(monto/cuotas, 2)} '
+                        f'Se han generado {cuotas-1} cuotas adicionales de ${round(monto/cuotas, 2)} '
                         f'a partir del mes siguiente.'
                     )
                 else:
