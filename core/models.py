@@ -101,8 +101,23 @@ class ConsumoDiario(models.Model):
             try:
                 # Redondear a 2 decimales para evitar errores de precisión
                 monto_por_cuota = round(float(self.monto) / int(self.cuotas), 2)
-                fecha_actual = self.fecha
-                print(f"DETALLE: monto_por_cuota={monto_por_cuota}, fecha_actual={fecha_actual}")
+                
+                # Asegurar que fecha_actual sea un objeto date válido
+                from datetime import date
+                if isinstance(self.fecha, str):
+                    # Si es string, convertir a date
+                    try:
+                        partes = self.fecha.split('-')
+                        fecha_actual = date(int(partes[0]), int(partes[1]), int(partes[2]))
+                    except Exception as e:
+                        print(f"Error convirtiendo fecha string: {str(e)}")
+                        fecha_actual = date.today()
+                else:
+                    # Debería ser un objeto date
+                    fecha_actual = self.fecha
+                    
+                print(f"DETALLE: monto_por_cuota={monto_por_cuota}, fecha_actual={fecha_actual}, tipo={type(fecha_actual)}")
+                print(f"Fecha original tipo: {type(self.fecha)}, valor: {self.fecha}")
                 
                 # Asegurar que la descripción tenga un valor por defecto
                 desc_base = self.descripcion if self.descripcion else 'Consumo con tarjeta'
