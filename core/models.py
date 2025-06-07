@@ -65,14 +65,13 @@ class ConsumoFijoMensual(models.Model):
         unique_together = ('categoria', 'mes', 'año')
 
 class ConsumoDiario(models.Model):
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='consumos_diarios')
-    tipo_pago = models.ForeignKey(TipoPago, on_delete=models.CASCADE, related_name='consumos_diarios')
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+    tipo_pago = models.ForeignKey(TipoPago, on_delete=models.CASCADE)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
-    fecha = models.DateField(default=timezone.now)
-    descripcion = models.TextField(blank=True, null=True)
+    fecha = models.DateField()
+    descripcion = models.CharField(max_length=255, blank=True, null=True)
     es_credito = models.BooleanField(default=False)
     cuotas = models.IntegerField(default=1)
-    es_cuota = models.BooleanField(default=False)  # Para marcar si es una cuota generada por otro consumo
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
@@ -86,11 +85,13 @@ class ConsumoDiario(models.Model):
     def save(self, *args, **kwargs):
         # Primero guardamos el objeto
         is_new = self.pk is None  # Verificar si es un objeto nuevo o una edición
+        created_from_credit_card = getattr(self, '_created_from_credit_card', False)
         super().save(*args, **kwargs)
         
         # Si es un pago con tarjeta de crédito en cuotas, crear consumos diarios para los meses siguientes
         # Comenzando desde el mes siguiente al de la fecha del consumo
-        if is_new and self.es_credito and self.cuotas > 1 and self.tipo_pago and self.tipo_pago.es_tarjeta_credito:
+        # Solo procesamos cuando es nuevo Y no es una cuota creada por otro consumo
+        if is_new and self.es_credito and self.cuotas > 1 and self.tipo_pago and self.tipo_pago.es_tarjeta_credito and not created_from_credit_card:
             try:
                 # Redondear a 2 decimales para evitar errores de precisión
                 monto_por_cuota = round(float(self.monto) / int(self.cuotas), 2)
@@ -137,11 +138,12 @@ class ConsumoDiario(models.Model):
                                 fecha=fecha_cuota,
                                 descripcion=descripcion_cuota,
                                 es_credito=False,  # No es crédito para evitar recursividad
-                                cuotas=1,          # No tiene cuotas para evitar recursividad
-                                es_cuota=True      # Marca que es una cuota de otro consumo
+                                cuotas=1           # No tiene cuotas para evitar recursividad
                             )
-                            # Guardar sin llamar al método save() para evitar recursividad
-                            super(ConsumoDiario, nuevo_consumo).save()
+                            # Marcar que este consumo fue creado por otro consumo con tarjeta
+                            # para evitar recursividad
+                            setattr(nuevo_consumo, '_created_from_credit_card', True)
+                            nuevo_consumo.save()
                             
                     except Exception as e:
                         # Capturar errores por cuota pero continuar con las demás
