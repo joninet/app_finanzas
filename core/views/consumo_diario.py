@@ -85,11 +85,10 @@ def consumo_diario_list(request):
     return render(request, 'core/consumo_diario/list.html', context)
 
 
-@login_required
 def consumo_diario_create(request):
     # Obtener los tipos de pago y categorías disponibles
-    tipos_pago = TipoPago.objects.all()
-    categorias = Categoria.objects.all()
+    tipos_pago = TipoPago.objects.all().order_by('nombre')
+    categorias = Categoria.objects.all().order_by('nombre')
     
     if request.method == 'POST':
         try:
@@ -130,11 +129,8 @@ def consumo_diario_create(request):
             # Convertir fecha string a objeto date
             try:
                 from datetime import datetime
-                # Parsear la fecha como YYYY-MM-DD
                 fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-                print(f"Fecha convertida: {fecha}, tipo: {type(fecha)}")
             except Exception as e:
-                print(f"Error convirtiendo fecha: {str(e)}, fecha recibida: {fecha_str}")
                 messages.error(request, f'Formato de fecha inválido: {fecha_str}')
                 return redirect('consumo_diario_create')
             
