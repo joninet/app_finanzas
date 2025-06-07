@@ -90,19 +90,48 @@ def consumo_diario_create(request):
     categorias = Categoria.objects.all().order_by('nombre')
     
     if request.method == 'POST':
-        tipo_pago_id = request.POST.get('tipo_pago')
-        categoria_id = request.POST.get('categoria')
-        monto = request.POST.get('monto')
-        fecha = request.POST.get('fecha') or timezone.now().date()
-        descripcion = request.POST.get('descripcion')
-        es_credito = request.POST.get('es_credito') == 'on'
-        cuotas = request.POST.get('cuotas', 1)
-        
         try:
-            tipo_pago = TipoPago.objects.get(pk=tipo_pago_id)
-            categoria = Categoria.objects.get(pk=categoria_id)
-            monto = float(monto.replace(',', '.'))
-            cuotas = int(cuotas) if cuotas else 1
+            # Obtener datos del formulario
+            tipo_pago_id = request.POST.get('tipo_pago')
+            categoria_id = request.POST.get('categoria')
+            monto = request.POST.get('monto', '')
+            fecha = request.POST.get('fecha') or timezone.now().date()
+            descripcion = request.POST.get('descripcion', '')
+            es_credito = request.POST.get('es_credito') == 'on'
+            cuotas = request.POST.get('cuotas', '1')
+            
+            # Realizar validaciones
+            if not tipo_pago_id:
+                messages.error(request, 'Debe seleccionar un tipo de pago')
+                return redirect('consumo_diario_create')
+                
+            if not categoria_id:
+                messages.error(request, 'Debe seleccionar una categoría')
+                return redirect('consumo_diario_create')
+            
+            try:
+                tipo_pago = TipoPago.objects.get(pk=tipo_pago_id)
+            except TipoPago.DoesNotExist:
+                messages.error(request, f'El tipo de pago seleccionado (ID: {tipo_pago_id}) no existe')
+                return redirect('consumo_diario_create')
+                
+            try:
+                categoria = Categoria.objects.get(pk=categoria_id)
+            except Categoria.DoesNotExist:
+                messages.error(request, f'La categoría seleccionada (ID: {categoria_id}) no existe')
+                return redirect('consumo_diario_create')
+            
+            try:
+                monto = float(monto.replace(',', '.')) if monto else 0
+            except ValueError:
+                messages.error(request, f'El monto ingresado "{monto}" no es un valor numérico válido')
+                return redirect('consumo_diario_create')
+            
+            try:
+                cuotas = int(cuotas) if cuotas else 1
+            except ValueError:
+                messages.error(request, f'Las cuotas ingresadas "{cuotas}" no son un número válido')
+                return redirect('consumo_diario_create')
             
             if monto <= 0:
                 messages.error(request, 'El monto debe ser mayor a cero')
@@ -112,23 +141,38 @@ def consumo_diario_create(request):
                 messages.error(request, 'El número de cuotas debe ser mayor a cero')
                 return redirect('consumo_diario_create')
             
-            ConsumoDiario.objects.create(
-                tipo_pago=tipo_pago,
-                categoria=categoria,
-                monto=monto,
-                fecha=fecha,
-                descripcion=descripcion,
-                es_credito=es_credito and tipo_pago.es_tarjeta_credito,
-                cuotas=cuotas if es_credito and tipo_pago.es_tarjeta_credito else 1
-            )
-            
-            messages.success(request, 'Consumo diario registrado correctamente')
-            return redirect('consumo_diario_list')
-            
-        except (TipoPago.DoesNotExist, Categoria.DoesNotExist):
-            messages.error(request, 'El tipo de pago o categoría seleccionados no existen')
-        except ValueError:
-            messages.error(request, 'Valores numéricos inválidos')
+            # Crear el consumo diario con manejo de excepciones
+            try:
+                consumo = ConsumoDiario.objects.create(
+                    tipo_pago=tipo_pago,
+                    categoria=categoria,
+                    monto=monto,
+                    fecha=fecha,
+                    descripcion=descripcion,
+                    es_credito=es_credito and tipo_pago.es_tarjeta_credito,
+                    cuotas=cuotas if es_credito and tipo_pago.es_tarjeta_credito else 1
+                )
+                
+                # Para tarjeta de crédito en cuotas, mostrar mensaje detallado
+                if es_credito and tipo_pago.es_tarjeta_credito and cuotas > 1:
+                    messages.success(
+                        request, 
+                        f'Consumo con tarjeta de crédito registrado correctamente. '
+                        f'Se han generado {cuotas} cuotas de ${round(monto/cuotas, 2)} '
+                        f'a partir del mes siguiente.'
+                    )
+                else:
+                    messages.success(request, 'Consumo diario registrado correctamente')
+                    
+                return redirect('consumo_diario_list')
+            except Exception as e:
+                messages.error(request, f'Error al guardar el consumo: {str(e)}')
+                return redirect('consumo_diario_create')
+                
+        except Exception as e:
+            # Capturar cualquier otro error no manejado
+            messages.error(request, f'Error inesperado: {str(e)}')
+            return redirect('consumo_diario_create')
     
     context = {
         'tipos_pago': tipos_pago,

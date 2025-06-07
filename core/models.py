@@ -83,45 +83,55 @@ class ConsumoDiario(models.Model):
         verbose_name_plural = "Consumos Diarios"
     
     def save(self, *args, **kwargs):
+        # Primero guardamos el objeto
+        is_new = self.pk is None  # Verificar si es un objeto nuevo o una edición
         super().save(*args, **kwargs)
         
         # Si es un pago con tarjeta de crédito en cuotas, crear consumos fijos mensuales
         # Comenzando desde el mes siguiente al de la fecha del consumo
-        if self.es_credito and self.cuotas > 1 and self.tipo_pago.es_tarjeta_credito:
-            monto_por_cuota = self.monto / self.cuotas
-            fecha_actual = self.fecha
-            
-            # Para tarjetas de crédito, comenzamos en el mes siguiente
-            for i in range(self.cuotas):
-                # Sumamos 1 mes adicional para que la primera cuota sea el mes siguiente
-                mes_cuota = ((fecha_actual.month + i) % 12) + 1  # +i en lugar de +(i-1)
-                año_cuota = fecha_actual.year + ((fecha_actual.month + i) // 12)  # Sin -1
-                descripcion_cuota = f"Cuota {i+1}/{self.cuotas} - {self.descripcion or 'Consumo con tarjeta'}"
+        if is_new and self.es_credito and self.cuotas > 1 and self.tipo_pago and self.tipo_pago.es_tarjeta_credito:
+            try:
+                # Redondear a 2 decimales para evitar errores de precisión
+                monto_por_cuota = round(float(self.monto) / int(self.cuotas), 2)
+                fecha_actual = self.fecha
                 
-                try:
-                    # Intentar obtener un consumo fijo existente
+                # Asegurar que la descripción tenga un valor por defecto
+                desc_base = self.descripcion if self.descripcion else 'Consumo con tarjeta'
+                
+                # Para tarjetas de crédito, comenzamos en el mes siguiente
+                for i in range(self.cuotas):
                     try:
-                        consumo = ConsumoFijoMensual.objects.get(
-                            categoria=self.categoria,
-                            tipo_pago=self.tipo_pago,
-                            mes=mes_cuota,
-                            año=año_cuota
-                        )
-                        # Si existe, actualizar el monto y la descripción
-                        consumo.monto += monto_por_cuota
-                        consumo.descripcion = (consumo.descripcion or '') + f" + {descripcion_cuota}"
-                        consumo.save()
-                    except ConsumoFijoMensual.DoesNotExist:
-                        # Si no existe, crear uno nuevo
-                        ConsumoFijoMensual.objects.create(
-                            categoria=self.categoria,
-                            tipo_pago=self.tipo_pago,
-                            mes=mes_cuota,
-                            año=año_cuota,
-                            monto=monto_por_cuota,
-                            descripcion=descripcion_cuota
-                        )
-                except Exception as e:
-                    # Registrar el error pero no interrumpir la creación del consumo diario
-                    print(f"Error al crear consumo fijo para cuota {i+1}: {str(e)}")
-                    # Se podría agregar un log más formal aquí
+                        # Sumamos 1 mes adicional para que la primera cuota sea el mes siguiente
+                        mes_cuota = ((fecha_actual.month + i) % 12) + 1  # +i en lugar de +(i-1)
+                        año_cuota = fecha_actual.year + ((fecha_actual.month + i) // 12)  # Sin -1
+                        descripcion_cuota = f"Cuota {i+1}/{self.cuotas} - {desc_base}"
+                        
+                        # Intentar obtener un consumo fijo existente
+                        try:
+                            consumo = ConsumoFijoMensual.objects.get(
+                                categoria=self.categoria,
+                                tipo_pago=self.tipo_pago,
+                                mes=mes_cuota,
+                                año=año_cuota
+                            )
+                            # Si existe, actualizar el monto y la descripción
+                            consumo.monto = float(consumo.monto) + monto_por_cuota
+                            consumo.descripcion = f"{consumo.descripcion or ''} + {descripcion_cuota}".strip()
+                            consumo.save()
+                        except ConsumoFijoMensual.DoesNotExist:
+                            # Si no existe, crear uno nuevo
+                            ConsumoFijoMensual.objects.create(
+                                categoria=self.categoria,
+                                tipo_pago=self.tipo_pago,
+                                mes=mes_cuota,
+                                año=año_cuota,
+                                monto=monto_por_cuota,
+                                descripcion=descripcion_cuota
+                            )
+                    except Exception as e:
+                        # Capturar errores por cuota pero continuar con las demás
+                        print(f"Error procesando cuota {i+1}: {str(e)}")
+            except Exception as e:
+                # Capturar cualquier error en el proceso global de cuotas
+                print(f"Error general procesando cuotas: {str(e)}")
+                # El consumo diario ya se guardó, así que no afecta su creación
