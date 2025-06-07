@@ -11,11 +11,7 @@
             <form class="d-flex align-items-center">
                 <div class="input-group input-group-sm me-2" style="width: 150px;">
                     <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde|date:'Y-m-d' }}" aria-label="Desde">
-                </div>
-                <div class="input-group input-group-sm me-2" style="width: 150px;">
-                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                    <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta|date:'Y-m-d' }}" aria-label="Hasta">
+                    <input type="month" class="form-control" id="mes_filtro" name="mes" value="{{ año_actual }}-{{ mes_actual|stringformat:'02d' }}" aria-label="Mes">
                 </div>
                 <select name="categoria" class="form-select form-select-sm me-2" style="width: 180px;">
                     <option value="">Todas las categorías</option>
@@ -38,10 +34,7 @@
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">
-                    <i class="fas fa-shopping-cart me-2"></i>Lista de Consumos Diarios 
-                    {% if fecha_desde or fecha_hasta %}
-                    ({{ fecha_desde|date:"d/m/Y" }} - {{ fecha_hasta|date:"d/m/Y" }})
-                    {% endif %}
+                    <i class="fas fa-shopping-cart me-2"></i>Lista de Consumos Diarios ({{ mes_nombre }} {{ año_actual }})
                 </h5>
             </div>
             <div class="card-body p-0">
@@ -123,12 +116,12 @@
                     <ul class="pagination justify-content-center mb-0">
                         {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page=1{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="First">
+                            <a class="page-link" href="?page=1&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="First">
                                 <span aria-hidden="true">&laquo;&laquo;</span>
                             </a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Previous">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
@@ -136,20 +129,20 @@
                         
                         {% for num in page_obj.paginator.page_range %}
                             {% if page_obj.number == num %}
-                            <li class="page-item active"><a class="page-link" href="?page={{ num }}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">{{ num }}</a></li>
+                            <li class="page-item active"><a class="page-link" href="?page={{ num }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">{{ num }}</a></li>
                             {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">{{ num }}</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">{{ num }}</a></li>
                             {% endif %}
                         {% endfor %}
                         
                         {% if page_obj.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Next">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Last">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Last">
                                 <span aria-hidden="true">&raquo;&raquo;</span>
                             </a>
                         </li>
@@ -178,24 +171,19 @@
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
         
-        // Asegurar fechas por defecto si están vacías
-        const fechaDesdeEl = document.getElementById('fecha_desde');
-        const fechaHastaEl = document.getElementById('fecha_hasta');
-        
-        // Si no hay fecha desde, establecer primer día del mes actual
-        if (!fechaDesdeEl.value) {
+        // Asegurar que el mes por defecto es el actual
+        const mesFiltroEl = document.getElementById('mes_filtro');
+        if (!mesFiltroEl.value) {
             const hoy = new Date();
-            const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-            fechaDesdeEl.value = primerDiaMes.toISOString().split('T')[0];
-        }
-        
-        // Si no hay fecha hasta, establecer el día actual
-        if (!fechaHastaEl.value) {
-            const hoy = new Date();
-            fechaHastaEl.value = hoy.toISOString().split('T')[0];
+            const mesActual = String(hoy.getMonth() + 1).padStart(2, '0');
+            mesFiltroEl.value = `${hoy.getFullYear()}-${mesActual}`;
         }
         
         // Auto-enviar formulario al cambiar valores
+        mesFiltroEl.addEventListener('change', function() {
+            this.form.submit();
+        });
+        
         const categoriaSelect = document.querySelector('select[name="categoria"]');
         categoriaSelect.addEventListener('change', function() {
             this.form.submit();

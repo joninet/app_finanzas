@@ -8,33 +8,38 @@ from datetime import datetime
 
 
 def consumo_diario_list(request):
-    # Obtener parámetros de filtro
-    fecha_desde = request.GET.get('fecha_desde')
-    fecha_hasta = request.GET.get('fecha_hasta')
+    # Filtrar por mes y año (similar a consumos fijos)
+    fecha_filtro = request.GET.get('mes', None)
     categoria_id = request.GET.get('categoria')
     
-    # Configurar filtro por defecto (mes actual si no hay filtros)
-    if not fecha_desde and not fecha_hasta and not categoria_id:
-        hoy = timezone.now().date()
-        primer_dia_mes = datetime(hoy.year, hoy.month, 1).date()
-        fecha_desde = primer_dia_mes.isoformat()
+    # Mes y año por defecto (actual)
+    mes_actual = timezone.now().month
+    año_actual = timezone.now().year
+    
+    # Procesar filtro de fecha si existe
+    if fecha_filtro:
+        try:
+            fecha_partes = fecha_filtro.split('-')
+            if len(fecha_partes) == 2:
+                año_actual = int(fecha_partes[0])
+                mes_actual = int(fecha_partes[1])
+        except (ValueError, IndexError):
+            pass
+    
+    # Calcular el primer y último día del mes seleccionado
+    import calendar
+    ultimo_dia = calendar.monthrange(año_actual, mes_actual)[1]
+    
+    fecha_desde = datetime(año_actual, mes_actual, 1).date()
+    fecha_hasta = datetime(año_actual, mes_actual, ultimo_dia).date()
     
     # Iniciar con todos los consumos
     consumos = ConsumoDiario.objects.all()
     
-    # Aplicar filtros
-    if fecha_desde:
-        try:
-            consumos = consumos.filter(fecha__gte=fecha_desde)
-        except (ValueError, TypeError):
-            messages.warning(request, 'Formato de fecha inválido para fecha desde')
+    # Aplicar filtros de fecha
+    consumos = consumos.filter(fecha__gte=fecha_desde, fecha__lte=fecha_hasta)
     
-    if fecha_hasta:
-        try:
-            consumos = consumos.filter(fecha__lte=fecha_hasta)
-        except (ValueError, TypeError):
-            messages.warning(request, 'Formato de fecha inválido para fecha hasta')
-    
+    # Aplicar filtro de categoría si existe
     if categoria_id and categoria_id.isdigit():
         consumos = consumos.filter(categoria_id=categoria_id)
     
@@ -49,6 +54,9 @@ def consumo_diario_list(request):
     # Obtener categorías para el filtro
     categorias = Categoria.objects.all().order_by('nombre')
     
+    # Obtener nombre del mes para mostrar
+    mes_nombre = datetime(2000, mes_actual, 1).strftime('%B').capitalize()
+    
     # Paginación
     paginator = Paginator(consumos, 10)
     page_number = request.GET.get('page')
@@ -57,14 +65,17 @@ def consumo_diario_list(request):
     context = {
         'page_obj': page_obj,
         'titulo': 'Consumos Diarios',
-        'fecha_desde': fecha_desde,
-        'fecha_hasta': fecha_hasta,
-        'fecha_actual': timezone.now().date().isoformat(),
         'categorias': categorias,
         'categoria_id': categoria_id,
         'total_consumos': total_consumos,
         'total_efectivo': total_efectivo,
-        'total_credito': total_credito
+        'total_credito': total_credito,
+        'mes_actual': mes_actual,
+        'año_actual': año_actual,
+        'mes_nombre': mes_nombre,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'fecha_actual': timezone.now().date().isoformat()
     }
     
     return render(request, 'core/consumo_diario/list.html', context)
