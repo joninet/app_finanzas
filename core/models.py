@@ -108,12 +108,13 @@ class ConsumoDiario(models.Model):
                 desc_base = self.descripcion if self.descripcion else 'Consumo con tarjeta'
                 
                 # Para tarjetas de crédito, comenzamos en el mes siguiente
-                for i in range(self.cuotas):
+                # Generamos solo cuotas-1 consumos adicionales, empezando desde la cuota 2
+                for i in range(1, self.cuotas):
                     try:
-                        # Sumamos 1 mes adicional para que la primera cuota sea el mes siguiente
                         # Calcular la fecha exacta para el mes/año de la cuota
-                        mes_cuota = ((fecha_actual.month + i) % 12) + 1  # +i en lugar de +(i-1)
-                        año_cuota = fecha_actual.year + ((fecha_actual.month + i) // 12)  # Sin -1
+                        # i ya empieza en 1 para la primera cuota que corresponde al mes siguiente
+                        mes_cuota = ((fecha_actual.month + i) % 12) or 12  # Para que diciembre sea 12, no 0
+                        año_cuota = fecha_actual.year + ((fecha_actual.month + i - 1) // 12)
                         
                         print(f"CUOTA {i+1}: mes={mes_cuota}, año={año_cuota}")
                         
