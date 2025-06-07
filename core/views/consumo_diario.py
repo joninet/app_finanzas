@@ -43,10 +43,6 @@ def consumo_diario_list(request):
     if categoria_id and categoria_id.isdigit():
         consumos = consumos.filter(categoria_id=categoria_id)
     
-    # Excluir los consumos con tarjeta de crédito en cuotas
-    # Ya que estos se reflejan en los meses siguientes como consumos fijos
-    consumos = consumos.exclude(es_credito=True, cuotas__gt=1)
-    
     # Ordenar por fecha descendente (más reciente primero)
     consumos = consumos.order_by('-fecha')
     

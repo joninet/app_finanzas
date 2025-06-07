@@ -72,6 +72,7 @@ class ConsumoDiario(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     es_credito = models.BooleanField(default=False)
     cuotas = models.IntegerField(default=1)
+    es_cuota = models.BooleanField(default=False)  # Para marcar si es una cuota generada por otro consumo
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
@@ -87,7 +88,7 @@ class ConsumoDiario(models.Model):
         is_new = self.pk is None  # Verificar si es un objeto nuevo o una edición
         super().save(*args, **kwargs)
         
-        # Si es un pago con tarjeta de crédito en cuotas, crear consumos fijos mensuales
+        # Si es un pago con tarjeta de crédito en cuotas, crear consumos diarios para los meses siguientes
         # Comenzando desde el mes siguiente al de la fecha del consumo
         if is_new and self.es_credito and self.cuotas > 1 and self.tipo_pago and self.tipo_pago.es_tarjeta_credito:
             try:
@@ -102,32 +103,46 @@ class ConsumoDiario(models.Model):
                 for i in range(self.cuotas):
                     try:
                         # Sumamos 1 mes adicional para que la primera cuota sea el mes siguiente
+                        # Calcular la fecha exacta para el mes/año de la cuota
                         mes_cuota = ((fecha_actual.month + i) % 12) + 1  # +i en lugar de +(i-1)
                         año_cuota = fecha_actual.year + ((fecha_actual.month + i) // 12)  # Sin -1
+                        
+                        # Crear una fecha para el mismo día del mes siguiente
+                        from datetime import date
+                        try:
+                            fecha_cuota = date(año_cuota, mes_cuota, fecha_actual.day)
+                        except ValueError:
+                            # Si el día no existe en el mes (ej. 31 de febrero), usar el último día del mes
+                            if mes_cuota == 2:
+                                # Febrero
+                                if (año_cuota % 4 == 0 and año_cuota % 100 != 0) or año_cuota % 400 == 0:
+                                    fecha_cuota = date(año_cuota, mes_cuota, 29)  # Año bisiesto
+                                else:
+                                    fecha_cuota = date(año_cuota, mes_cuota, 28)
+                            elif mes_cuota in [4, 6, 9, 11]:  # Meses con 30 días
+                                fecha_cuota = date(año_cuota, mes_cuota, 30)
+                            else:  # Meses con 31 días
+                                fecha_cuota = date(año_cuota, mes_cuota, 31)
+                        
                         descripcion_cuota = f"Cuota {i+1}/{self.cuotas} - {desc_base}"
                         
-                        # Intentar obtener un consumo fijo existente
-                        try:
-                            consumo = ConsumoFijoMensual.objects.get(
+                        # Crear un nuevo consumo diario para esta cuota
+                        from django.db import transaction
+                        with transaction.atomic():
+                            # Usamos transaction.atomic para evitar llamadas recursivas al save()
+                            nuevo_consumo = ConsumoDiario(
                                 categoria=self.categoria,
                                 tipo_pago=self.tipo_pago,
-                                mes=mes_cuota,
-                                año=año_cuota
-                            )
-                            # Si existe, actualizar el monto y la descripción
-                            consumo.monto = float(consumo.monto) + monto_por_cuota
-                            consumo.descripcion = f"{consumo.descripcion or ''} + {descripcion_cuota}".strip()
-                            consumo.save()
-                        except ConsumoFijoMensual.DoesNotExist:
-                            # Si no existe, crear uno nuevo
-                            ConsumoFijoMensual.objects.create(
-                                categoria=self.categoria,
-                                tipo_pago=self.tipo_pago,
-                                mes=mes_cuota,
-                                año=año_cuota,
                                 monto=monto_por_cuota,
-                                descripcion=descripcion_cuota
+                                fecha=fecha_cuota,
+                                descripcion=descripcion_cuota,
+                                es_credito=False,  # No es crédito para evitar recursividad
+                                cuotas=1,          # No tiene cuotas para evitar recursividad
+                                es_cuota=True      # Marca que es una cuota de otro consumo
                             )
+                            # Guardar sin llamar al método save() para evitar recursividad
+                            super(ConsumoDiario, nuevo_consumo).save()
+                            
                     except Exception as e:
                         # Capturar errores por cuota pero continuar con las demás
                         print(f"Error procesando cuota {i+1}: {str(e)}")
