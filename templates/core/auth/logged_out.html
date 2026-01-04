@@ -5,20 +5,24 @@
 {% block page_title %}Sesión Cerrada{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0"><i class="fas fa-sign-out-alt me-2"></i>Has cerrado sesión</h5>
+<div class="flex justify-center mt-10">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-blue-400 px-6 py-4 border-b border-blue-500">
+                <h5 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Has cerrado sesión
+                </h5>
             </div>
-            <div class="card-body p-4 text-center">
-                <div class="mb-4">
-                    <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
-                    <h4>¡Gracias por usar Finanzas Personales!</h4>
-                    <p class="text-muted">Has cerrado sesión correctamente.</p>
+            <div class="p-8 text-center">
+                <div class="mb-6">
+                    <div class="inline-flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-4">
+                        <i class="fas fa-check-circle text-green-500 text-5xl"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-gray-900 mb-2">¡Gracias por usar Finanzas Personales!</h4>
+                    <p class="text-gray-500">Has cerrado sesión correctamente.</p>
                 </div>
-                <a href="{% url 'login' %}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-sign-in-alt me-2"></i>Volver a iniciar sesión
+                <a href="{% url 'login' %}" class="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+                    <i class="fas fa-sign-in-alt mr-2 mt-1"></i>Volver a iniciar sesión
                 </a>
             </div>
         </div>

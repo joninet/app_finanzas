@@ -232,6 +232,9 @@ def consumo_diario_update(request, pk):
             consumo_diario.save()
             
             messages.success(request, 'Consumo diario actualizado correctamente')
+            next_url = request.GET.get('next') or request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect('consumo_diario_list')
             
         except (TipoPago.DoesNotExist, Categoria.DoesNotExist):
@@ -295,12 +298,12 @@ def consumo_diario_delete(request, pk):
                 # Eliminar el consumo original
                 consumo_diario.delete()
             
-            messages.success(request, f'Se ha eliminado el consumo y todas sus cuotas ({total_cuotas + 1} registros)')
-        else:
-            # Eliminar solo este consumo
             consumo_diario.delete()
             messages.success(request, 'Consumo diario eliminado correctamente')
         
+        next_url = request.GET.get('next') or request.POST.get('next')
+        if next_url:
+            return redirect(next_url)
         return redirect('consumo_diario_list')
     
     context = {

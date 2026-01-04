@@ -24,6 +24,7 @@ def categoria_create(request):
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
+        icono = request.POST.get('icono', 'fa-solid fa-tag')
         
         if not nombre:
             messages.error(request, 'El nombre es obligatorio')
@@ -31,7 +32,8 @@ def categoria_create(request):
         
         Categoria.objects.create(
             nombre=nombre,
-            descripcion=descripcion
+            descripcion=descripcion,
+            icono=icono
         )
         
         messages.success(request, 'Categoría creada correctamente')
@@ -50,6 +52,7 @@ def categoria_update(request, pk):
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
+        icono = request.POST.get('icono')
         
         if not nombre:
             messages.error(request, 'El nombre es obligatorio')
@@ -57,6 +60,8 @@ def categoria_update(request, pk):
         
         categoria.nombre = nombre
         categoria.descripcion = descripcion
+        if icono:
+            categoria.icono = icono
         categoria.save()
         
         messages.success(request, 'Categoría actualizada correctamente')

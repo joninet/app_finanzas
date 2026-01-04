@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Finanzas Personales{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-end">
+    <a href="{% url 'credito_create' %}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded inline-flex items-center transition">
+        <i class="fas fa-plus mr-2"></i> Nuevo Crédito
+    </a>
+</div>
+
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="bg-blue-600 px-6 py-4 border-b border-blue-700">
+        <h5 class="text-xl font-bold text-white flex items-center"><i class="fas fa-hand-holding-usd mr-2"></i>Lista de Créditos</h5>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Monto Cuota</th>
+                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Cuotas</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inicio</th>
+                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for credito in creditos %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ credito.nombre }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ credito.categoria.nombre }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600 font-medium">${{ credito.monto_cuota|floatformat:2 }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{{ credito.cantidad_cuotas }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-bold">
+                        ${% widthratio credito.monto_cuota 1 credito.cantidad_cuotas %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ credito.fecha_inicio|date:"M Y"|capfirst }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <a href="{% url 'credito_delete' credito.id %}" class="text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded transition inline-block" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-500 italic">No hay créditos registrados aún</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

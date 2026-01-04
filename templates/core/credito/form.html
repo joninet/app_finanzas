@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Finanzas Personales{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="flex justify-center mb-8">
+    <div class="w-full max-w-2xl">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-blue-600 px-6 py-4 border-b border-blue-700">
+                <h5 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-plus mr-2"></i>Nuevo Crédito
+                </h5>
+            </div>
+            <div class="p-6">
+                <form method="post" class="space-y-6 needs-validation" novalidate id="creditoForm">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Crédito *</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="nombre" name="nombre" placeholder="Ej: Préstamo Banco Nación" required>
+                        <div class="hidden text-red-500 text-sm mt-1 validation-error">
+                            El nombre es obligatorio
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="monto_cuota" class="block text-sm font-medium text-gray-700 mb-1">Monto por Cuota *</label>
+                            <div class="relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">$</span>
+                                </div>
+                                <input type="number" class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="monto_cuota" name="monto_cuota" step="0.01" min="0.01" required>
+                            </div>
+                            <div class="hidden text-red-500 text-sm mt-1 validation-error">
+                                El monto debe ser mayor a cero
+                            </div>
+                        </div>
+                        <div>
+                            <label for="cantidad_cuotas" class="block text-sm font-medium text-gray-700 mb-1">Cantidad de Cuotas *</label>
+                            <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="cantidad_cuotas" name="cantidad_cuotas" min="1" step="1" required>
+                            <div class="hidden text-red-500 text-sm mt-1 validation-error">
+                                Debe ingresar al menos 1 cuota
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-1">Fecha Primera Cuota *</label>
+                            <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_actual }}" required>
+                            <div class="hidden text-red-500 text-sm mt-1 validation-error">
+                                Debe seleccionar una fecha de inicio
+                            </div>
+                        </div>
+                        <div>
+                            <label for="categoria" class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="categoria" name="categoria" required>
+                                <option value="">-- Seleccionar categoría --</option>
+                                {% for categoria in categorias %}
+                                <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="hidden text-red-500 text-sm mt-1 validation-error">
+                                Debe seleccionar una categoría
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="tipo_pago" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Pago (Opcional)</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="tipo_pago" name="tipo_pago">
+                            <option value="">-- Sin especificar --</option>
+                            {% for tipo_pago in tipos_pago %}
+                            <option value="{{ tipo_pago.id }}">{{ tipo_pago.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">Si se selecciona, se asignará a todos los consumos generados.</p>
+                    </div>
+                    
+                    <div>
+                        <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="descripcion" name="descripcion" rows="3"></textarea>
+                        <p class="mt-1 text-xs text-gray-500">Opcional: añade detalles sobre este crédito</p>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-md border border-blue-200">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-blue-500"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-blue-800">Información Importante</h3>
+                                <div class="mt-2 text-sm text-blue-700">
+                                    <p>Al guardar, se generarán automáticamente los <strong>Consumos Fijos Mensuales</strong> correspondientes a cada cuota, comenzando desde la fecha seleccionada.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between pt-4 border-t border-gray-200">
+                        <a href="{% url 'credito_list' %}" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition">
+                            <i class="fas fa-arrow-left mr-1"></i> Volver
+                        </a>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+                            <i class="fas fa-save mr-1"></i> Guardar Crédito
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Validación de formulario
+        const form = document.getElementById('creditoForm');
+        
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const inputs = form.querySelectorAll(':invalid');
+                inputs.forEach(input => {
+                    const errorDiv = input.parentElement.querySelector('.validation-error') || input.nextElementSibling;
+                    if(errorDiv && errorDiv.classList.contains('validation-error')) {
+                        errorDiv.classList.remove('hidden');
+                    }
+                    input.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                });
+            }
+        });
+        
+        // Limpiar errores al escribir
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.validity.valid) {
+                    const errorDiv = this.parentElement.querySelector('.validation-error') || this.nextElementSibling;
+                    if(errorDiv && errorDiv.classList.contains('validation-error')) {
+                        errorDiv.classList.add('hidden');
+                    }
+                    this.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

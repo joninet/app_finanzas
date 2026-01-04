@@ -93,7 +93,13 @@ def consumo_fijo_create(request):
         fecha_pago = request.POST.get('fecha_pago')
         
         try:
-            tipo_pago = TipoPago.objects.get(pk=tipo_pago_id)
+            tipo_pago = None
+            if tipo_pago_id:
+                tipo_pago = TipoPago.objects.get(pk=tipo_pago_id)
+            elif pagado:
+                messages.error(request, 'Debe seleccionar un tipo de pago si el consumo está pagado')
+                return redirect('consumo_fijo_create')
+
             categoria = Categoria.objects.get(pk=categoria_id)
             monto = float(monto.replace(',', '.'))
             mes = int(mes)
@@ -131,7 +137,7 @@ def consumo_fijo_create(request):
             return redirect('consumo_fijo_list')
             
         except (TipoPago.DoesNotExist, Categoria.DoesNotExist):
-            messages.error(request, 'El tipo de pago o categoría seleccionados no existen')
+            messages.error(request, 'La categoría seleccionada no existe')
         except ValueError:
             messages.error(request, 'Valores numéricos inválidos')
     
@@ -169,7 +175,13 @@ def consumo_fijo_update(request, pk):
         fecha_pago = request.POST.get('fecha_pago')
         
         try:
-            tipo_pago = TipoPago.objects.get(pk=tipo_pago_id)
+            tipo_pago = None
+            if tipo_pago_id:
+                tipo_pago = TipoPago.objects.get(pk=tipo_pago_id)
+            elif pagado:
+                messages.error(request, 'Debe seleccionar un tipo de pago si el consumo está pagado')
+                return redirect('consumo_fijo_update', pk=pk)
+
             categoria = Categoria.objects.get(pk=categoria_id)
             monto = float(monto.replace(',', '.'))
             mes = int(mes)
@@ -207,7 +219,7 @@ def consumo_fijo_update(request, pk):
             return redirect('consumo_fijo_list')
             
         except (TipoPago.DoesNotExist, Categoria.DoesNotExist):
-            messages.error(request, 'El tipo de pago o categoría seleccionados no existen')
+            messages.error(request, 'La categoría seleccionada no existe')
         except ValueError:
             messages.error(request, 'Valores numéricos inválidos')
     
@@ -243,6 +255,12 @@ def consumo_fijo_delete(request, pk):
 def consumo_fijo_toggle(request, pk):
     """Marcar/desmarcar un consumo fijo como pagado."""
     consumo_fijo = get_object_or_404(ConsumoFijoMensual, pk=pk)
+    
+    # Si se intenta marcar como pagado, verificar que tenga tipo de pago
+    if not consumo_fijo.pagado and not consumo_fijo.tipo_pago:
+        messages.error(request, 'No se puede marcar como pagado un consumo sin tipo de pago asignado. Por favor edite el consumo primero.')
+        return redirect('consumo_fijo_list')
+        
     consumo_fijo.pagado = not consumo_fijo.pagado
     
     if consumo_fijo.pagado:
@@ -252,4 +270,5 @@ def consumo_fijo_toggle(request, pk):
         
     consumo_fijo.save()
     
+    messages.success(request, 'Estado actualizado correctamente')
     return redirect(request.META.get('HTTP_REFERER', 'consumo_fijo_list'))

@@ -86,12 +86,8 @@ WSGI_APPLICATION = 'finanzas_personales.wsgi.application'
 # Configuración de la base de datos por defecto
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'db_finanzas',
-        'USER': 'db_finanzas_user',
-        'PASSWORD': 'JE7cOl0Y6UDwM1y4kyKDDpD8QOU5afRM',
-        'HOST': 'dpg-d11ejpje5dus738mccng-a.oregon-postgres.render.com',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 

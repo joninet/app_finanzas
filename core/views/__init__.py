@@ -4,3 +4,6 @@ from .ingreso import *
 from .consumo_fijo import *
 from .consumo_diario import *
 from .home import *
+from .credito import *
+from .resumen import *
+from .consumo_tarjeta import *

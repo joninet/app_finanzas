@@ -10,45 +10,9 @@
         padding: 10px;
     }
     
-    .form-mobile .form-control,
-    .form-mobile .form-select {
-        font-size: 1.1rem;
-        padding: 12px;
-        height: auto;
-        margin-bottom: 15px;
-    }
-    
-    .form-mobile label {
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    
-    .form-mobile .btn {
-        padding: 12px;
-        font-size: 1.1rem;
-    }
-    
-    .switch-container {
-        padding: 10px 0;
-        margin-bottom: 10px;
-    }
-    
     /* Para ocultar el header y footer en la versión móvil */
     .hide-in-mobile {
         display: none;
-    }
-    
-    /* Asegurar espaciado adecuado en móviles */
-    @media (max-width: 768px) {
-        body {
-            padding-top: 10px;
-        }
-        .card {
-            border-radius: 10px;
-        }
-        .navbar-brand {
-            font-size: 1.2rem;
-        }
     }
 </style>
 {% endblock %}
@@ -57,93 +21,121 @@
 {% block footer_class %}hide-in-mobile{% endblock %}
 
 {% block content %}
-<div class="container container-mobile">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-plus-circle me-2"></i>Nuevo Consumo
+<div class="container-mobile">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-blue-600 px-4 py-3 border-b border-blue-700 flex justify-between items-center">
+            <h5 class="text-lg font-bold text-white flex items-center">
+                <i class="fas fa-plus-circle mr-2"></i>Nuevo Consumo
             </h5>
-            <a href="{% url 'consumo_diario_list' %}" class="btn btn-sm btn-light">
+            <a href="{% url 'consumo_diario_list' %}" class="px-2 py-1 bg-white text-blue-600 rounded text-sm font-medium hover:bg-gray-100">
                 <i class="fas fa-list"></i> Ver Todos
             </a>
         </div>
         
-        <div class="card-body">
+        <div class="p-4">
             {% if messages %}
-            <div class="messages">
+            <div class="mb-4">
                 {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <div class="p-3 rounded mb-2 {% if message.tags == 'error' %}bg-red-100 text-red-800 border-l-4 border-red-500{% elif message.tags == 'success' %}bg-green-100 text-green-800 border-l-4 border-green-500{% else %}bg-blue-100 text-blue-800 border-l-4 border-blue-500{% endif %}" role="alert">
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="float-right text-lg font-bold" onclick="this.parentElement.remove()">&times;</button>
                 </div>
                 {% endfor %}
             </div>
             {% endif %}
             
-            <form method="post" class="form-mobile">
+            <form method="post" class="space-y-4">
                 {% csrf_token %}
                 
-                <div class="mb-3">
-                    <label for="monto" class="form-label">Monto ($) *</label>
-                    <input type="number" class="form-control" id="monto" name="monto" step="0.01" required autofocus>
+                <div>
+                    <label for="monto" class="block text-lg font-bold text-gray-800 mb-1">Monto ($) *</label>
+                    <input type="number" class="w-full px-4 py-3 text-xl border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" id="monto" name="monto" step="0.01" required autofocus inputmode="decimal">
                 </div>
                 
-                <div class="mb-3">
-                    <label for="categoria" class="form-label">Categoría *</label>
-                    <select class="form-select" id="categoria" name="categoria" required>
-                        <option value="" selected disabled>Seleccione una categoría</option>
+                <div>
+                    <label for="categoria" class="block text-base font-bold text-gray-700 mb-1">Categoría *</label>
+                    <select class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" id="categoria" name="categoria" required>
+                        <option value="" selected disabled>Seleccione</option>
                         {% for categoria in categorias %}
                         <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="tipo_pago" class="form-label">Tipo de Pago *</label>
-                    <select class="form-select" id="tipo_pago" name="tipo_pago" required>
-                        <option value="" selected disabled>Seleccione tipo de pago</option>
+                <div>
+                    <label for="tipo_pago" class="block text-base font-bold text-gray-700 mb-1">Tipo de Pago *</label>
+                    <select class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" id="tipo_pago" name="tipo_pago" required>
+                        <option value="" selected disabled>Seleccione pago</option>
                         {% for tipo in tipos_pago %}
                         <option value="{{ tipo.id }}" data-tarjeta="{{ tipo.es_tarjeta_credito|yesno:'true,false' }}">{{ tipo.nombre }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="fecha" class="form-label">Fecha</label>
-                    <input type="date" class="form-control" id="fecha" name="fecha" value="{{ fecha_actual }}">
+                <div>
+                    <label for="fecha" class="block text-base font-bold text-gray-700 mb-1">Fecha</label>
+                    <input type="date" class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" id="fecha" name="fecha" value="{{ fecha_actual }}">
                 </div>
                 
-                <div id="credito-container" style="display: none;">
-                    <div class="form-check form-switch switch-container">
-                        <input class="form-check-input" type="checkbox" id="es_credito" name="es_credito">
-                        <label class="form-check-label" for="es_credito">¿Pagar en cuotas?</label>
+                <div id="credito-container" style="display: none;" class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div class="flex items-center mb-3">
+                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="es_credito" id="es_credito" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                            <label for="es_credito" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                        <label for="es_credito" class="text-lg font-medium text-gray-700">¿Pago en cuotas?</label>
                     </div>
                     
                     <div id="cuotas-container" style="display: none;">
-                        <div class="mb-3">
-                            <label for="cuotas" class="form-label">Número de cuotas</label>
-                            <input type="number" class="form-control" id="cuotas" name="cuotas" value="1" min="1">
+                        <div>
+                            <label for="cuotas" class="block text-base font-medium text-gray-700 mb-1">Número de cuotas</label>
+                            <input type="number" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm" id="cuotas" name="cuotas" value="1" min="1" inputmode="numeric">
                         </div>
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="descripcion" class="form-label">Descripción</label>
-                    <input type="text" class="form-control" id="descripcion" name="descripcion" placeholder="(Opcional)">
+                <div>
+                    <label for="descripcion" class="block text-base font-bold text-gray-700 mb-1">Descripción</label>
+                    <input type="text" class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" id="descripcion" name="descripcion" placeholder="(Opcional)">
                 </div>
                 
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i> Guardar Consumo
+                <div class="grid grid-cols-1 gap-3 pt-2">
+                    <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl rounded-lg shadow-md focus:outline-none focus:ring-4 focus:ring-blue-300 transition-colors">
+                        <i class="fas fa-save mr-2"></i> Guardar
                     </button>
-                    <a href="{% url 'consumo_diario_list' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i> Volver
+                    <a href="{% url 'consumo_diario_list' %}" class="w-full py-3 bg-white text-gray-700 border border-gray-300 font-bold text-center text-lg rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i> Volver
                     </a>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<style>
+/* Custom Toggle Switch for Tailwind */
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #2563eb;
+}
+.toggle-checkbox:checked + .toggle-label {
+    background-color: #2563eb;
+}
+.toggle-checkbox {
+    right: 0;
+    transition: all 0.3s ease-in-out;
+    border-color: #d1d5db;
+}
+.toggle-label {
+    width: 3rem;
+}
+.toggle-checkbox {
+    right: calc(100% - 1.5rem);
+}
+.toggle-checkbox:checked {
+    right: 0;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}

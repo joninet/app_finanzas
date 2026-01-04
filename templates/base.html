@@ -4,8 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Finanzas Personales{% endblock %}</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#475569',
+                    }
+                }
+            }
+        }
+    </script>
     <!-- Font Awesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
@@ -14,6 +26,9 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
         /* Estilos para acceso rápido a la versión móvil */
         .mobile-quick-access {
             position: fixed;
@@ -26,7 +41,6 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -38,111 +52,151 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top {% block header_class %}{% endblock %}">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-wallet me-2"></i>Finanzas Personales
+<body class="bg-gray-50 flex flex-col md:flex-row min-h-screen">
+    <!-- Mobile Top Header -->
+    <header class="md:hidden bg-blue-600 text-white p-4 flex justify-between items-center sticky top-0 z-50">
+        <a class="text-xl font-bold flex items-center" href="{% url 'home' %}">
+            <i class="fas fa-wallet mr-2"></i>Finanzas
+        </a>
+        <button id="sidebarToggle" class="p-2 rounded hover:bg-blue-700 transition">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-slate-300 z-50 transform -translate-x-full md:translate-x-0 md:static transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="p-6 border-b border-slate-800">
+            <a class="text-xl font-bold text-white flex items-center" href="{% url 'home' %}">
+                <i class="fas fa-wallet mr-2 text-blue-500"></i>Finanzas <span class="text-blue-500 ml-1">App</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">
-                            <i class="fas fa-home me-1"></i> Inicio
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/tipo-pago/' in request.path %}active{% endif %}" href="{% url 'tipo_pago_list' %}">
-                            <i class="fas fa-credit-card me-1"></i> Tipos de Pago
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/categoria/' in request.path %}active{% endif %}" href="{% url 'categoria_list' %}">
-                            <i class="fas fa-tags me-1"></i> Categorías
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/ingreso/' in request.path %}active{% endif %}" href="{% url 'ingreso_list' %}">
-                            <i class="fas fa-dollar-sign me-1"></i> Ingresos
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/consumo-fijo/' in request.path %}active{% endif %}" href="{% url 'consumo_fijo_list' %}">
-                            <i class="fas fa-calendar-alt me-1"></i> Consumos Fijos
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if '/consumo-diario/' in request.path %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-shopping-cart me-1"></i> Consumos Diarios
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'consumo_diario_list' %}">Ver lista completa</a></li>
-                            <li><a class="dropdown-item" href="{% url 'consumo_diario_mobile' %}">
-                                <i class="fas fa-mobile-alt me-1"></i> Versión móvil rápida
-                            </a></li>
-                            <li><a class="dropdown-item" href="{% url 'consumo_diario_create' %}">Crear nuevo</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'admin:index' %}">
-                            <i class="fas fa-cogs me-1"></i> Admin
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Contenido principal -->
-    <div class="container main-content">
-        <!-- Mensajes flash -->
-        {% if messages %}
-        <div class="messages mt-3">
-            {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <!-- Título de la sección -->
-        <div class="row mb-4">
-            <div class="col">
-                <h1 class="display-6 fw-bold">{% block page_title %}Finanzas Personales{% endblock %}</h1>
-                <hr>
-            </div>
         </div>
 
-        <!-- Contenido específico de cada página -->
-        {% block content %}{% endblock %}
+        <nav class="flex-grow py-6 overflow-y-auto">
+            <!-- Dashboard Section -->
+            <div class="px-6 mb-6">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Dashboard</p>
+                <div class="space-y-1">
+                    <a href="{% url 'home' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if request.path == '/' %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-house w-6"></i>Inicio
+                    </a>
+                    <a href="{% url 'resumen_mensual' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/resumen/' in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-chart-pie w-6"></i>Resumen
+                    </a>
+                </div>
+            </div>
+
+            <!-- Activity Section -->
+            <div class="px-6 mb-6">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Actividad</p>
+                <div class="space-y-1">
+                    <a href="{% url 'consumo_diario_list' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/consumo-diario/' in request.path and '/consumo-diario/mobile/' not in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-shopping-cart w-6"></i>Consumos Diarios
+                    </a>
+                    <a href="{% url 'ingreso_list' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/ingreso/' in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-money-bill-transfer w-6"></i>Ingresos
+                    </a>
+                    <a href="{% url 'consumo_fijo_list' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/consumo-fijo/' in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-calendar-check w-6"></i>Gastos Fijos
+                    </a>
+                    <a href="{% url 'consumo_diario_mobile' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/consumo-diario/mobile/' in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-bolt w-6 text-yellow-500"></i>Acceso Móvil
+                    </a>
+                </div>
+            </div>
+
+            <!-- Financing Section -->
+            <div class="px-6 mb-6">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Financiamiento</p>
+                <div class="space-y-1">
+                    <a href="{% url 'consumo_tarjeta_list' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/consumo-tarjeta/' in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-credit-card w-6"></i>Tarjetas
+                    </a>
+                    <a href="{% url 'credito_list' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/creditos/' in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-hand-holding-dollar w-6"></i>Créditos
+                    </a>
+                </div>
+            </div>
+
+            <!-- Setup Section -->
+            <div class="px-6 mb-6">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Configuración</p>
+                <div class="space-y-1">
+                    <a href="{% url 'tipo_pago_list' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/tipo-pago/' in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-wallet w-6"></i>Tipos de Pago
+                    </a>
+                    <a href="{% url 'categoria_list' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition {% if '/categoria/' in request.path %}bg-blue-600 text-white{% else %}hover:bg-slate-800 hover:text-white{% endif %}">
+                        <i class="fas fa-tags w-6"></i>Categorías
+                    </a>
+                    <a href="{% url 'admin:index' %}" class="flex items-center px-4 py-2 text-sm rounded-md transition hover:bg-slate-800 hover:text-white">
+                        <i class="fas fa-gear w-6"></i>Panel Admin
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="p-6 border-t border-slate-800 text-xs text-slate-500 text-center">
+            &copy; {% now "Y" %} Finanzas App
+        </div>
+    </aside>
+
+    <!-- Main Content wrapper -->
+    <div class="flex-grow flex flex-col min-w-0">
+        <!-- Contenido principal -->
+        <main class="flex-grow p-4 md:p-8 lg:p-12 overflow-x-hidden">
+            <!-- Mensajes flash -->
+            {% if messages %}
+            <div class="max-w-4xl mx-auto mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded shadow-sm {% if message.tags == 'error' %}bg-red-100 text-red-800 border-l-4 border-red-500{% elif message.tags == 'success' %}bg-green-100 text-green-800 border-l-4 border-green-500{% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500{% else %}bg-blue-100 text-blue-800 border-l-4 border-blue-500{% endif %} flex justify-between items-center" role="alert">
+                    <span>{{ message }}</span>
+                    <button type="button" class="text-gray-500 hover:text-gray-700" onclick="this.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="max-w-7xl mx-auto">
+                <!-- Page Title -->
+                <div class="mb-8 flex justify-between items-end border-b border-gray-200 pb-4">
+                    <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">
+                        {% block page_title %}Finanzas Personales{% endblock %}
+                    </h1>
+                </div>
+
+                <!-- Content -->
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+
+        <!-- Footer (Hidden on desktop sidebar layout if preferred, or kept for extra info) -->
+        <footer class="bg-white border-t border-gray-200 py-6 px-8 text-center md:text-left">
+            <div class="max-w-7xl mx-auto text-gray-500 text-sm">
+                Finanzas Personales - Gestión inteligente de tus ahorros.
+            </div>
+        </footer>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-light py-4 {% block footer_class %}{% endblock %}">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    <h5><i class="fas fa-wallet me-2"></i>Finanzas Personales</h5>
-                    <p class="small">Una aplicación para gestionar tus finanzas personales de manera eficiente.</p>
-                </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <p class="mb-0">&copy; {% now "Y" %} Finanzas Personales. Todos los derechos reservados.</p>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Mobile Sidebar Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
 
-    <!-- Bootstrap JS y dependencias -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom scripts -->
-    <script src="{% static 'js/scripts.js' %}"></script>
+            function toggleSidebar() {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            }
+
+            toggle.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

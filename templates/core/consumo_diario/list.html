@@ -5,159 +5,161 @@
 {% block page_title %}Consumos Diarios{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="d-flex justify-content-between mb-3">
-            <form class="d-flex align-items-center">
-                <div class="input-group input-group-sm me-2" style="width: 150px;">
-                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                    <input type="month" class="form-control" id="mes_filtro" name="mes" value="{{ año_actual }}-{{ mes_actual|stringformat:'02d' }}" aria-label="Mes">
-                </div>
-                <select name="categoria" class="form-select form-select-sm me-2" style="width: 180px;">
-                    <option value="">Todas las categorías</option>
-                    {% for cat in categorias %}
-                    <option value="{{ cat.id }}" {% if categoria_id == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.nombre }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-sm btn-secondary">
-                    <i class="fas fa-filter"></i> Filtrar
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary ms-1" id="btn-reset-filters">
-                    <i class="fas fa-undo"></i>
-                </button>
-            </form>
-            <a href="{% url 'consumo_diario_create' %}" class="btn btn-success">
-                <i class="fas fa-plus me-1"></i> Nuevo Consumo
-            </a>
-        </div>
-        
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-shopping-cart me-2"></i>Lista de Consumos Diarios ({{ mes_nombre }} {{ año_actual }})
-                </h5>
+<div class="mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <form class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-500"><i class="fas fa-calendar-alt"></i></span>
+                <input type="month" class="form-input rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" id="mes_filtro" name="mes" value="{{ año_actual }}-{{ mes_actual|stringformat:'02d' }}" aria-label="Mes">
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Categoría</th>
-                                <th>Descripción</th>
-                                <th>Tipo de Pago</th>
-                                <th class="text-end">Monto</th>
-                                <th class="text-center">Cuotas</th>
-                                <th class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for consumo in page_obj %}
-                            <tr>
-                                <td>{{ consumo.fecha|date:"d/m/Y" }}</td>
-                                <td>{{ consumo.categoria.nombre }}</td>
-                                <td>{{ consumo.descripcion|default:"--" }}</td>
-                                <td>
-                                    {{ consumo.tipo_pago.nombre }}
-                                    {% if consumo.tipo_pago.es_tarjeta_credito %}
-                                    <i class="fas fa-credit-card text-info ms-1" data-bs-toggle="tooltip" title="Tarjeta de crédito"></i>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end text-danger">${{ consumo.monto|floatformat:2 }}</td>
-                                <td class="text-center">
-                                    {% if consumo.es_credito %}
-                                    <span class="badge bg-info">{{ consumo.cuotas }} cuotas</span>
-                                    {% else %}
-                                    --
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <a href="{% url 'consumo_diario_update' consumo.id %}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{% url 'consumo_diario_delete' consumo.id %}" class="btn btn-sm btn-danger" data-bs-toggle="tooltip" title="Eliminar">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center">No hay consumos diarios registrados para el período seleccionado</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot>
-                            {% if page_obj %}
-                            <tr class="table-primary">
-                                <td colspan="4"><strong>Total General</strong></td>
-                                <td class="text-end text-danger"><strong>${{ total_consumos|floatformat:2 }}</strong></td>
-                                <td colspan="2"></td>
-                            </tr>
-                            <tr class="table-success">
-                                <td colspan="4"><strong>Total Efectivo/Débito</strong></td>
-                                <td class="text-end text-success"><strong>${{ total_efectivo|floatformat:2 }}</strong></td>
-                                <td colspan="2"></td>
-                            </tr>
-                            <tr class="table-warning">
-                                <td colspan="4"><strong>Total Crédito</strong></td>
-                                <td class="text-end text-danger"><strong>${{ total_credito|floatformat:2 }}</strong></td>
-                                <td colspan="2"></td>
-                            </tr>
-                            {% endif %}
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Paginación -->
-            {% if page_obj.has_other_pages %}
-            <div class="card-footer">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center mb-0">
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="First">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                            <li class="page-item active"><a class="page-link" href="?page={{ num }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">{{ num }}</a></li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}">{{ num }}</a></li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" aria-label="Last">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-            {% endif %}
-        </div>
+            <select name="categoria" class="form-select rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" style="min-width: 15rem;">
+                <option value="">Todas las categorías</option>
+                {% for cat in categorias %}
+                <option value="{{ cat.id }}" {% if categoria_id == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.nombre }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition">
+                <i class="fas fa-filter"></i>
+            </button>
+            <button type="button" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-2 px-4 rounded transition" id="btn-reset-filters">
+                <i class="fas fa-undo"></i>
+            </button>
+        </form>
+        <a href="{% url 'consumo_diario_create' %}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded inline-flex items-center transition">
+            <i class="fas fa-plus mr-2"></i> Nuevo Consumo
+        </a>
     </div>
 </div>
+
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="bg-blue-600 px-6 py-4 border-b border-blue-700">
+        <h5 class="text-xl font-bold text-white flex items-center">
+            <i class="fas fa-shopping-cart mr-2"></i>Lista de Consumos Diarios ({{ mes_nombre }} {{ año_actual }})
+        </h5>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Pago</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Cuotas</th>
+                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for consumo in page_obj %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ consumo.fecha|date:"d/m/Y" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex items-center">
+                        <i class="{{ consumo.categoria.icono|default:'fa-solid fa-tag' }} mr-2 text-gray-400"></i>
+                        {{ consumo.categoria.nombre }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{{ consumo.descripcion|default:"--" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ consumo.tipo_pago.nombre }}
+                        {% if consumo.tipo_pago.es_tarjeta_credito %}
+                        <i class="fas fa-credit-card text-blue-400 ml-1" title="Tarjeta de crédito"></i>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600 font-medium">${{ consumo.monto|floatformat:2 }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                        {% if consumo.es_credito %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            {{ consumo.cuotas }} cuotas
+                        </span>
+                        {% else %}
+                        <span class="text-gray-400">--</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <a href="{% url 'consumo_diario_update' consumo.id %}" class="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded mr-2 transition inline-block" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'consumo_diario_delete' consumo.id %}" class="text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded transition inline-block" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-500 italic">No hay consumos diarios registrados para el período seleccionado</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="bg-gray-50 border-t border-gray-200">
+                {% if page_obj %}
+                <tr class="bg-blue-50">
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-bold text-gray-900">Total General</td>
+                    <td class="px-6 py-3 text-right text-sm font-bold text-red-600">${{ total_consumos|floatformat:2 }}</td>
+                    <td colspan="2"></td>
+                </tr>
+                <tr class="bg-green-50">
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-bold text-gray-900">Total Efectivo/Débito</td>
+                    <td class="px-6 py-3 text-right text-sm font-bold text-green-600">${{ total_efectivo|floatformat:2 }}</td>
+                    <td colspan="2"></td>
+                </tr>
+                <tr class="bg-orange-50">
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-bold text-gray-900">Total Crédito</td>
+                    <td class="px-6 py-3 text-right text-sm font-bold text-red-600">${{ total_credito|floatformat:2 }}</td>
+                    <td colspan="2"></td>
+                </tr>
+                {% endif %}
+            </tfoot>
+        </table>
+    </div>
+    
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+        <nav aria-label="Page navigation" class="flex justify-center">
+            <ul class="inline-flex items-center -space-x-px rounded-md shadow-sm">
+                {% if page_obj.has_previous %}
+                <li>
+                    <a href="?page=1&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" class="px-3 py-2 ml-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 hover:text-gray-700">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="?page={{ page_obj.previous_page_number }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li><a href="?page={{ num }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" class="px-3 py-2 leading-tight text-blue-600 bg-blue-50 border border-gray-300 hover:bg-blue-100 hover:text-blue-700">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li><a href="?page={{ num }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li>
+                    <a href="?page={{ page_obj.next_page_number }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="?page={{ page_obj.paginator.num_pages }}&mes={{ año_actual }}-{{ mes_actual|stringformat:'02d' }}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 hover:text-gray-700">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
 <!-- Botón de acceso rápido a versión móvil -->
-<div class="mobile-quick-access">
-    <a href="{% url 'consumo_diario_mobile' %}" class="btn btn-success" data-bs-toggle="tooltip" title="Versión móvil rápida">
-        <i class="fas fa-mobile-alt mobile-icon"></i>
+<div class="fixed bottom-5 right-5 z-50 md:hidden">
+    <a href="{% url 'consumo_diario_mobile' %}" class="flex items-center justify-center w-14 h-14 rounded-full bg-green-600 text-white shadow-lg hover:bg-green-700 transition" title="Versión móvil rápida">
+        <i class="fas fa-mobile-alt text-2xl"></i>
     </a>
 </div>
 {% endblock %}
@@ -165,12 +167,6 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar los tooltips
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-        
         // Asegurar que el mes por defecto es el actual
         const mesFiltroEl = document.getElementById('mes_filtro');
         if (!mesFiltroEl.value) {
@@ -196,3 +192,5 @@
     });
 </script>
 {% endblock %}
+
+

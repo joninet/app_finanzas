@@ -5,7 +5,10 @@ from .views import (
     categoria_list, categoria_create, categoria_update, categoria_delete,
     ingreso_list, ingreso_create, ingreso_update, ingreso_delete,
     consumo_fijo_list, consumo_fijo_create, consumo_fijo_update, consumo_fijo_delete, consumo_fijo_toggle,
-    consumo_diario_list, consumo_diario_create, consumo_diario_update, consumo_diario_delete
+    consumo_diario_list, consumo_diario_create, consumo_diario_update, consumo_diario_delete,
+    credito_list, credito_create, credito_delete,
+    resumen_mensual,
+    consumo_tarjeta_list
 )
 from .views.consumo_diario_mobile import consumo_diario_mobile
 
@@ -44,4 +47,12 @@ urlpatterns = [
     path('consumo-diario/editar/<int:pk>/', consumo_diario_update, name='consumo_diario_update'),
     path('consumo-diario/eliminar/<int:pk>/', consumo_diario_delete, name='consumo_diario_delete'),
     path('consumo-diario/mobile/', consumo_diario_mobile, name='consumo_diario_mobile'),
+    
+    path('creditos/', credito_list, name='credito_list'),
+    path('creditos/crear/', credito_create, name='credito_create'),
+    path('creditos/eliminar/<int:pk>/', credito_delete, name='credito_delete'),
+    
+    # Resumen
+    path('resumen/', resumen_mensual, name='resumen_mensual'),
+    path('consumo-tarjeta/', consumo_tarjeta_list, name='consumo_tarjeta_list'),
 ]

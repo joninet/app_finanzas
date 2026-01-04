@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Filtro de fecha -->
+        <form class="flex flex-wrap items-center gap-2 bg-white p-3 rounded-lg shadow-sm">
+            <label for="mes" class="text-gray-700 font-medium mr-2">Seleccionar Período:</label>
+            <input type="month" class="form-input rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" id="mes" name="mes" value="{{ mes_filtro_value }}" onchange="this.form.submit()">
+        </form>
+        
+        <div class="flex gap-2">
+            <!-- Botones de estadisticas rapidas o exportar podrian ir aqui -->
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de Resumen -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Total General -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total del Mes</p>
+                <h3 class="text-2xl font-bold text-gray-900 mt-1">${{ total_general|floatformat:2 }}</h3>
+            </div>
+            <div class="p-3 bg-blue-100 rounded-full text-blue-600">
+                <i class="fas fa-wallet text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-4 text-sm text-gray-600">
+            <span class="font-semibold text-blue-600">{{ total_fijos|floatformat:2 }}</span> fijos + 
+            <span class="font-semibold text-indigo-600">{{ total_tarjetas|floatformat:2 }}</span> tarjetas
+        </div>
+    </div>
+
+    <!-- Pagado vs Pendiente (Solo Fijos) -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Fijos Pendientes</p>
+                <h3 class="text-2xl font-bold text-gray-900 mt-1">${{ total_fijos_pendiente|floatformat:2 }}</h3>
+            </div>
+            <div class="p-3 bg-green-100 rounded-full text-green-600">
+                <i class="fas fa-check-circle text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-4 w-full bg-gray-200 rounded-full h-2.5">
+            {% if total_fijos > 0 %}
+            <div class="bg-green-600 h-2.5 rounded-full" style="width: {% widthratio total_fijos_pagado total_fijos 100 %}%"></div>
+            {% else %}
+            <div class="bg-gray-400 h-2.5 rounded-full" style="width: 0%"></div>
+            {% endif %}
+        </div>
+        <p class="text-xs text-gray-500 mt-1 text-right">
+            {% if total_fijos > 0 %}
+            {% widthratio total_fijos_pagado total_fijos 100 %}% pagado
+            {% else %}
+            0%
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Proyección o Estado -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Estado</p>
+                <h3 class="text-xl font-bold text-gray-900 mt-1">
+                    {% if total_fijos_pendiente == 0 and total_fijos > 0 %}
+                    <span class="text-green-600">¡Al día!</span>
+                    {% elif total_fijos_pendiente > 0 %}
+                    <span class="text-yellow-600">Pagos pendientes</span>
+                    {% else %}
+                    <span class="text-gray-500">Sin datos</span>
+                    {% endif %}
+                </h3>
+            </div>
+            <div class="p-3 bg-purple-100 rounded-full text-purple-600">
+                <i class="fas fa-chart-line text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-4 text-sm text-gray-600">
+            Revisa los detalles abajo para gestionar tus pagos pendientes.
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Columna Izquierda: Consumos Fijos y Créditos -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-gray-800 px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+            <h5 class="text-lg font-bold text-white flex items-center">
+                <i class="fas fa-calendar-check mr-2"></i>Pagos Fijos y Créditos
+            </h5>
+            <span class="bg-gray-700 text-white text-xs px-2 py-1 rounded-full">{{ consumos_fijos|length }} items</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Monto</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for consumo in consumos_fijos %}
+                    <tr class="hover:bg-gray-50 transition {% if consumo.pagado %}bg-green-50 bg-opacity-30{% endif %}">
+                        <td class="px-4 py-3">
+                            <div class="text-sm font-medium text-gray-900 flex items-center">
+                                <i class="{{ consumo.categoria.icono|default:'fa-solid fa-tag' }} mr-2 text-gray-400 w-4"></i>
+                                {{ consumo.categoria.nombre }}
+                            </div>
+                            {% if consumo.descripcion %}
+                            <div class="text-xs text-gray-500 ml-6">{{ consumo.descripcion|truncatechars:40 }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-gray-800">
+                            ${{ consumo.monto|floatformat:2 }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {% if consumo.pagado %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Pagado
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                Pendiente
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
+                            <form action="{% url 'consumo_fijo_toggle' consumo.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                {% if consumo.pagado %}
+                                <button type="submit" class="text-gray-400 hover:text-yellow-600 transition" title="Marcar como pendiente">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                                {% else %}
+                                <button type="submit" class="text-green-600 hover:text-green-800 transition transform hover:scale-110" title="Marcar como pagado">
+                                    <i class="far fa-check-circle fa-lg"></i>
+                                </button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">No hay pagos fijos este mes.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr>
+                        <td class="px-4 py-2 font-bold text-gray-700 text-right">Total:</td>
+                        <td class="px-4 py-2 font-bold text-gray-900 text-right">${{ total_fijos|floatformat:2 }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Tarjetas de Crédito -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-indigo-600 px-6 py-4 border-b border-indigo-700 flex justify-between items-center">
+            <h5 class="text-lg font-bold text-white flex items-center">
+                <i class="fas fa-credit-card mr-2"></i>Compromisos de Tarjeta
+            </h5>
+            <span class="bg-indigo-800 text-white text-xs px-2 py-1 rounded-full">{{ tarjetas_resumen|length }} tarjetas</span>
+        </div>
+        <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarjeta</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total a Pagar</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ver</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for tarjeta in tarjetas_resumen %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3">
+                            <div class="text-sm font-bold text-gray-900 flex items-center">
+                                <i class="fas fa-credit-card mr-2 text-indigo-400"></i>
+                                {{ tarjeta.tipo_pago__nombre|default:"Sin Nombre" }}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-gray-800">
+                            ${{ tarjeta.total|floatformat:2 }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
+                            <button onclick="abrirModalTarjeta('{{ tarjeta.tipo_pago__nombre|escapejs }}')" class="text-indigo-600 hover:text-indigo-900 transition transform hover:scale-110">
+                                <i class="fas fa-search-plus fa-lg"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="px-4 py-8 text-center text-gray-500 italic">No hay compromisos de tarjeta este mes.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr>
+                        <td class="px-4 py-2 font-bold text-gray-700 text-right">Total:</td>
+                        <td class="px-4 py-2 font-bold text-gray-900 text-right">${{ total_tarjetas|floatformat:2 }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalles de Tarjeta -->
+<div id="modal-tarjeta" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Overlay -->
+        <div id="modal-overlay" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-xl leading-6 font-bold text-gray-900 flex items-center" id="modal-title">
+                            <i class="fas fa-credit-card mr-2 text-indigo-600"></i>
+                            Detalles: <span id="modal-card-name" class="ml-1"></span>
+                        </h3>
+                        <div class="mt-4">
+                            <div class="overflow-x-auto border rounded-lg">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Detalle</th>
+                                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Cuota</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="modal-tbody" class="bg-white divide-y divide-gray-200">
+                                        <!-- Se llena con JS -->
+                                    </tbody>
+                                    <tfoot class="bg-gray-50">
+                                        <tr>
+                                            <td colspan="3" class="px-4 py-2 text-right font-bold text-gray-700 text-sm">Total Tarjeta:</td>
+                                            <td id="modal-total" class="px-4 py-2 text-right font-bold text-gray-900 text-sm"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="cerrarModalTarjeta()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    console.log("Dashboard Resumen JS Loaded");
+    
+    // Datos de consumos pasados desde Django
+    const consumosTarjeta = [
+        {% for consumo in consumos_tarjeta_all %}
+        {
+            tarjeta: "{{ consumo.tipo_pago.nombre|default:'Sin Nombre'|escapejs }}",
+            fecha: "{{ consumo.fecha|date:'d/m/Y' }}",
+            categoria: "{{ consumo.categoria.nombre|escapejs }}",
+            descripcion: "{{ consumo.descripcion|escapejs }}",
+            cuota_numero: parseInt("{{ consumo.cuota_numero|default:1 }}"),
+            cuota_total: parseInt("{{ consumo.cuota_total|default:1 }}"),
+            monto: parseFloat("{{ consumo.monto|floatformat:2|escapejs }}".replace(',', '.'))
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    function abrirModalTarjeta(nombreTarjeta) {
+        console.log("Abriendo modal para:", nombreTarjeta);
+        const modal = document.getElementById('modal-tarjeta');
+        const cardNameSpan = document.getElementById('modal-card-name');
+        const tbody = document.getElementById('modal-tbody');
+        const totalSpan = document.getElementById('modal-total');
+
+        if (!modal) {
+            console.error("No se encontró el elemento modal-tarjeta");
+            return;
+        }
+
+        cardNameSpan.textContent = nombreTarjeta || "Sin Nombre";
+        tbody.innerHTML = '';
+        
+        let total = 0;
+        const filtrados = consumosTarjeta.filter(c => c.tarjeta === (nombreTarjeta || "Sin Nombre"));
+        console.log("Items encontrados:", filtrados.length);
+
+        if (filtrados.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">No hay consumos registrados para esta tarjeta.</td></tr>';
+        } else {
+            filtrados.forEach(c => {
+                total += c.monto;
+                const restan = c.cuota_total - c.cuota_numero;
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                row.innerHTML = `
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${c.fecha}</td>
+                    <td class="px-4 py-2">
+                        <div class="text-sm text-gray-900 font-medium">${c.categoria}</div>
+                        <div class="text-[10px] text-gray-500 leading-tight">${c.descripcion}</div>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-center">
+                        <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-xs font-bold">
+                            ${c.cuota_numero}/${c.cuota_total}
+                        </span>
+                        <div class="text-[10px] text-gray-400 mt-0.5">${restan > 0 ? 'Restan: ' + restan : 'Última cuota'}</div>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-right font-bold text-gray-800">$${c.monto.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        totalSpan.textContent = '$' + total.toFixed(2);
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function cerrarModalTarjeta() {
+        const modal = document.getElementById('modal-tarjeta');
+        if (modal) modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    // Inicializar listeners al cargar el DOM
+    document.addEventListener('DOMContentLoaded', () => {
+        const overlay = document.getElementById('modal-overlay');
+        if (overlay) overlay.addEventListener('click', cerrarModalTarjeta);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') cerrarModalTarjeta();
+        });
+    });
+</script>
+{% endblock %}

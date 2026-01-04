@@ -5,68 +5,68 @@
 {% block page_title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="row mb-4 justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
+<div class="flex justify-center mb-8">
+    <div class="w-full max-w-2xl">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-blue-600 px-6 py-4 border-b border-blue-700">
+                <h5 class="text-xl font-bold text-white flex items-center">
                     {% if ingreso %}
-                    <i class="fas fa-edit me-2"></i>Editar Ingreso
+                    <i class="fas fa-edit mr-2"></i>Editar Ingreso
                     {% else %}
-                    <i class="fas fa-plus me-2"></i>Nuevo Ingreso
+                    <i class="fas fa-plus mr-2"></i>Nuevo Ingreso
                     {% endif %}
                 </h5>
             </div>
-            <div class="card-body">
-                <form method="post" class="needs-validation" novalidate>
+            <div class="p-6">
+                <form method="post" class="space-y-6 needs-validation" novalidate id="ingresoForm">
                     {% csrf_token %}
                     
-                    <!-- El campo nombre se ha eliminado ya que no existe en el modelo -->
-                    
-                    <div class="mb-3">
-                        <label for="tipo_pago" class="form-label">Tipo de Pago *</label>
-                        <select class="form-select" id="tipo_pago" name="tipo_pago" required>
+                    <div>
+                        <label for="tipo_pago" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Pago *</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="tipo_pago" name="tipo_pago" required>
                             <option value="">-- Seleccionar tipo de pago --</option>
                             {% for tipo_pago in tipos_pago %}
                             <option value="{{ tipo_pago.id }}" {% if ingreso.tipo_pago.id == tipo_pago.id %}selected{% endif %}>{{ tipo_pago.nombre }}</option>
                             {% endfor %}
                         </select>
-                        <div class="invalid-feedback">
+                        <div class="hidden text-red-500 text-sm mt-1 validation-error">
                             Debe seleccionar un tipo de pago
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="monto" class="form-label">Monto *</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" id="monto" name="monto" value="{{ ingreso.monto|default:'' }}" step="0.01" min="0.01" required>
+                    <div>
+                        <label for="monto" class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input type="number" class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="monto" name="monto" value="{{ ingreso.monto|default:'' }}" step="0.01" min="0.01" required>
                         </div>
-                        <div class="invalid-feedback">
+                        <div class="hidden text-red-500 text-sm mt-1 validation-error">
                             El monto debe ser mayor a cero
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="fecha" class="form-label">Fecha *</label>
-                        <input type="date" class="form-control" id="fecha" name="fecha" value="{% if ingreso.fecha %}{{ ingreso.fecha|date:'Y-m-d' }}{% else %}{{ fecha_actual }}{% endif %}" required>
-                        <div class="invalid-feedback">
+                    <div>
+                        <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                        <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="fecha" name="fecha" value="{% if ingreso.fecha %}{{ ingreso.fecha|date:'Y-m-d' }}{% else %}{{ fecha_actual }}{% endif %}" required>
+                        <div class="hidden text-red-500 text-sm mt-1 validation-error">
                             Debe seleccionar una fecha válida
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción</label>
-                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ ingreso.descripcion|default:'' }}</textarea>
-                        <div class="form-text">Opcional: añade detalles sobre este ingreso</div>
+                    <div>
+                        <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" id="descripcion" name="descripcion" rows="3">{{ ingreso.descripcion|default:'' }}</textarea>
+                        <p class="mt-1 text-xs text-gray-500">Opcional: añade detalles sobre este ingreso</p>
                     </div>
                     
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'ingreso_list' %}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-1"></i> Volver
+                    <div class="flex justify-between pt-4 border-t border-gray-200">
+                        <a href="{% url 'ingreso_list' %}" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition">
+                            <i class="fas fa-arrow-left mr-1"></i> Volver
                         </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i> Guardar
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+                            <i class="fas fa-save mr-1"></i> Guardar
                         </button>
                     </div>
                 </form>
@@ -80,17 +80,35 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Validación de formulario
-        const forms = document.querySelectorAll('.needs-validation');
+        const form = document.getElementById('ingresoForm');
         
-        Array.from(forms).forEach(function (form) {
-            form.addEventListener('submit', function (event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                // Mostrar errores manualmente para Tailwind
+                const inputs = form.querySelectorAll(':invalid');
+                inputs.forEach(input => {
+                    const errorDiv = input.parentElement.querySelector('.validation-error') || input.nextElementSibling;
+                    if(errorDiv && errorDiv.classList.contains('validation-error')) {
+                        errorDiv.classList.remove('hidden');
+                    }
+                    input.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                });
+            }
+        });
+        
+        // Limpiar errores al escribir
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.validity.valid) {
+                    const errorDiv = this.parentElement.querySelector('.validation-error') || this.nextElementSibling;
+                    if(errorDiv && errorDiv.classList.contains('validation-error')) {
+                        errorDiv.classList.add('hidden');
+                    }
+                    this.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
                 }
-                
-                form.classList.add('was-validated');
-            }, false);
+            });
         });
     });
 </script>
