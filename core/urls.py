@@ -9,7 +9,8 @@ from .views import (
     credito_list, credito_create, credito_delete,
     resumen_mensual,
     consumo_tarjeta_list,
-    export_data_json
+    export_data_json,
+    update_comment
 )
 from .views.consumo_diario_mobile import consumo_diario_mobile
 
@@ -59,4 +60,7 @@ urlpatterns = [
     
     # Backup
     path('backup/exportar/', export_data_json, name='export_data_json'),
+    
+    # Comentarios
+    path('comentario/actualizar/', update_comment, name='update_comment'),
 ]

@@ -56,6 +56,7 @@ class ConsumoFijoMensual(models.Model):
     mes = models.IntegerField(choices=[(i, i) for i in range(1, 13)])
     año = models.IntegerField()
     descripcion = models.TextField(blank=True, null=True)
+    comentario = models.TextField(blank=True, null=True, help_text="Comentario específico para este mes")
     pagado = models.BooleanField(default=False)
     fecha_pago = models.DateField(null=True, blank=True)
     
@@ -79,6 +80,7 @@ class ConsumoDiario(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     fecha = models.DateField()
     descripcion = models.CharField(max_length=255, blank=True, null=True)
+    comentario = models.TextField(blank=True, null=True, help_text="Comentario específico para este mes")
     es_credito = models.BooleanField(default=False)
     cuotas = models.IntegerField(default=1)
     cuota_numero = models.IntegerField(default=1)
@@ -167,7 +169,8 @@ class ConsumoDiario(models.Model):
                                 cuotas=1,          # Para evitar recursividad
                                 cuota_numero=num_cuota,
                                 cuota_total=self.cuotas,
-                                consumo_original=self
+                                consumo_original=self,
+                                comentario=self.comentario
                             )
                             setattr(nuevo_consumo, '_created_from_credit_card', True)
                             nuevo_consumo.save()

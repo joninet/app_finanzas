@@ -121,6 +121,10 @@
                             {% if consumo.descripcion %}
                             <div class="text-xs text-gray-500 ml-6">{{ consumo.descripcion|truncatechars:40 }}</div>
                             {% endif %}
+                            <div id="comment-fijo-{{ consumo.id }}" class="text-[10px] text-blue-500 italic ml-6 mt-1 cursor-pointer hover:underline flex items-center group" onclick="abrirModalComentario('{{ consumo.id }}', 'fijo', '{{ consumo.comentario|escapejs }}')">
+                                <i class="fas fa-comment-dots mr-1 opacity-50 group-hover:opacity-100"></i>
+                                <span>{% if consumo.comentario %}{{ consumo.comentario }}{% else %}Agregar comentario...{% endif %}</span>
+                            </div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-gray-800">
                             ${{ consumo.monto|floatformat:2 }}
@@ -271,6 +275,33 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Editar Comentario -->
+<div id="modal-comentario" class="fixed inset-0 z-[60] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div id="modal-comentario-overlay" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="form-comentario">
+                {% csrf_token %}
+                <input type="hidden" id="comment-item-id">
+                <input type="hidden" id="comment-model-type">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Editar Comentario</h3>
+                    <textarea id="comment-text" rows="4" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" placeholder="Escribe tu comentario aquí..."></textarea>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Guardar
+                    </button>
+                    <button type="button" onclick="cerrarModalComentario()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -281,10 +312,12 @@
     const consumosTarjeta = [
         {% for consumo in consumos_tarjeta_all %}
         {
+            id: "{{ consumo.id }}",
             tarjeta: "{{ consumo.tipo_pago.nombre|default:'Sin Nombre'|escapejs }}",
             fecha: "{{ consumo.fecha|date:'d/m/Y' }}",
             categoria: "{{ consumo.categoria.nombre|escapejs }}",
             descripcion: "{{ consumo.descripcion|escapejs }}",
+            comentario: "{{ consumo.comentario|default:''|escapejs }}",
             cuota_numero: parseInt("{{ consumo.cuota_numero|default:1 }}"),
             cuota_total: parseInt("{{ consumo.cuota_total|default:1 }}"),
             monto: parseFloat("{{ consumo.monto|floatformat:2|escapejs }}".replace(',', '.'))
@@ -325,6 +358,10 @@
                     <td class="px-4 py-2">
                         <div class="text-sm text-gray-900 font-medium">${c.categoria}</div>
                         <div class="text-[10px] text-gray-500 leading-tight">${c.descripcion}</div>
+                        <div id="comment-diario-${c.id}" class="text-[10px] text-blue-500 italic mt-1 cursor-pointer hover:underline flex items-center group" onclick="abrirModalComentario('${c.id}', 'diario', '${c.comentario.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-comment-dots mr-1 opacity-50 group-hover:opacity-100"></i>
+                            <span>${c.comentario || 'Agregar comentario...'}</span>
+                        </div>
                     </td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-center">
                         <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-xs font-bold">
@@ -349,13 +386,82 @@
         document.body.classList.remove('overflow-hidden');
     }
 
+    // Funciones para Comentarios
+    function abrirModalComentario(id, type, comment) {
+        document.getElementById('comment-item-id').value = id;
+        document.getElementById('comment-model-type').value = type;
+        document.getElementById('comment-text').value = comment;
+        document.getElementById('modal-comentario').classList.remove('hidden');
+    }
+
+    function cerrarModalComentario() {
+        document.getElementById('modal-comentario').classList.add('hidden');
+    }
+
     // Inicializar listeners al cargar el DOM
     document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('modal-overlay');
         if (overlay) overlay.addEventListener('click', cerrarModalTarjeta);
+
+        const commentOverlay = document.getElementById('modal-comentario-overlay');
+        if (commentOverlay) commentOverlay.addEventListener('click', cerrarModalComentario);
         
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') cerrarModalTarjeta();
+            if (e.key === 'Escape') {
+                cerrarModalTarjeta();
+                cerrarModalComentario();
+            }
+        });
+
+        // Manejar envío de formulario de comentario
+        document.getElementById('form-comentario').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('comment-item-id').value;
+            const type = document.getElementById('comment-model-type').value;
+            const comment = document.getElementById('comment-text').value;
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch('{% url "update_comment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrf
+                },
+                body: new URLSearchParams({
+                    'item_id': id,
+                    'model_type': type,
+                    'comentario': comment
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Actualizar UI
+                    const containerId = type === 'fijo' ? `comment-fijo-${id}` : `comment-diario-${id}`;
+                    const container = document.getElementById(containerId);
+                    if (container) {
+                        const span = container.querySelector('span');
+                        span.textContent = data.comentario || 'Agregar comentario...';
+                        
+                        // Actualizar el valor en el onclick para futuras ediciones
+                        container.setAttribute('onclick', `abrirModalComentario('${id}', '${type}', '${data.comentario.replace(/'/g, "\\'")}')`);
+                    }
+                    
+                    // Si es diario, también actualizar el array local consumosTarjeta por si reabren el modal
+                    if (type === 'diario') {
+                        const item = consumosTarjeta.find(c => c.id === id);
+                        if (item) item.comentario = data.comentario;
+                    }
+                    
+                    cerrarModalComentario();
+                } else {
+                    alert('Error al guardar el comentario');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al procesar la solicitud');
+            });
         });
     });
 </script>
