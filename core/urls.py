@@ -8,7 +8,8 @@ from .views import (
     consumo_diario_list, consumo_diario_create, consumo_diario_update, consumo_diario_delete,
     credito_list, credito_create, credito_delete,
     resumen_mensual,
-    consumo_tarjeta_list
+    consumo_tarjeta_list,
+    export_data_json
 )
 from .views.consumo_diario_mobile import consumo_diario_mobile
 
@@ -55,4 +56,7 @@ urlpatterns = [
     # Resumen
     path('resumen/', resumen_mensual, name='resumen_mensual'),
     path('consumo-tarjeta/', consumo_tarjeta_list, name='consumo_tarjeta_list'),
+    
+    # Backup
+    path('backup/exportar/', export_data_json, name='export_data_json'),
 ]

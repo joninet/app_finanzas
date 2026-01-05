@@ -7,3 +7,4 @@ from .home import *
 from .credito import *
 from .resumen import *
 from .consumo_tarjeta import *
+from .backup import *
