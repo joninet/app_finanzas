@@ -25,6 +25,7 @@ def tipo_pago_create(request):
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
         es_tarjeta_credito = request.POST.get('es_tarjeta_credito') == 'on'
+        es_tarjeta_debito = request.POST.get('es_tarjeta_debito') == 'on'
         
         if not nombre:
             messages.error(request, 'El nombre es obligatorio')
@@ -33,7 +34,8 @@ def tipo_pago_create(request):
         TipoPago.objects.create(
             nombre=nombre,
             descripcion=descripcion,
-            es_tarjeta_credito=es_tarjeta_credito
+            es_tarjeta_credito=es_tarjeta_credito,
+            es_tarjeta_debito=es_tarjeta_debito
         )
         
         messages.success(request, 'Tipo de pago creado correctamente')
@@ -53,6 +55,7 @@ def tipo_pago_update(request, pk):
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
         es_tarjeta_credito = request.POST.get('es_tarjeta_credito') == 'on'
+        es_tarjeta_debito = request.POST.get('es_tarjeta_debito') == 'on'
         
         if not nombre:
             messages.error(request, 'El nombre es obligatorio')
@@ -61,6 +64,7 @@ def tipo_pago_update(request, pk):
         tipo_pago.nombre = nombre
         tipo_pago.descripcion = descripcion
         tipo_pago.es_tarjeta_credito = es_tarjeta_credito
+        tipo_pago.es_tarjeta_debito = es_tarjeta_debito
         tipo_pago.save()
         
         messages.success(request, 'Tipo de pago actualizado correctamente')

@@ -23,7 +23,7 @@ def ingreso_list(request):
 
 
 def ingreso_create(request):
-    tipos_pago = TipoPago.objects.all().order_by('nombre')
+    tipos_pago = TipoPago.objects.filter(es_tarjeta_debito=True).order_by('nombre')
     fecha_actual = timezone.now().date()
     
     if request.method == 'POST':
@@ -66,7 +66,7 @@ def ingreso_create(request):
 
 def ingreso_update(request, pk):
     ingreso = get_object_or_404(Ingreso, pk=pk)
-    tipos_pago = TipoPago.objects.all().order_by('nombre')
+    tipos_pago = TipoPago.objects.filter(es_tarjeta_debito=True).order_by('nombre')
     fecha_actual = timezone.now().date()
     
     if request.method == 'POST':

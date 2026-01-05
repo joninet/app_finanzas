@@ -99,6 +99,7 @@ def consumo_diario_create(request):
             fecha_str = request.POST.get('fecha')
             descripcion = request.POST.get('descripcion')
             es_credito = 'es_credito' in request.POST
+            primera_cuota_siguiente_mes = 'primera_cuota_siguiente_mes' in request.POST
             cuotas = request.POST.get('cuotas', '1')
             
             # Validar valores
@@ -142,6 +143,13 @@ def consumo_diario_create(request):
                 messages.error(request, 'Tipo de pago o categoría no válidos')
                 return redirect('consumo_diario_create')
             
+            # Verificar saldo si es tarjeta de débito
+            if tipo_pago.es_tarjeta_debito:
+                balance_actual = tipo_pago.balance
+                if balance_actual < monto:
+                    messages.error(request, f'Saldo insuficiente en {tipo_pago.nombre}. Saldo actual: ${balance_actual:.2f}')
+                    return redirect('consumo_diario_create')
+            
             # Crear el consumo diario con manejo de excepciones
             try:
                 consumo = ConsumoDiario(
@@ -151,7 +159,9 @@ def consumo_diario_create(request):
                     fecha=fecha,
                     descripcion=descripcion,
                     es_credito=es_credito and tipo_pago.es_tarjeta_credito,
-                    cuotas=cuotas if es_credito and tipo_pago.es_tarjeta_credito else 1
+                    primera_cuota_siguiente_mes=primera_cuota_siguiente_mes if es_credito and tipo_pago.es_tarjeta_credito else False,
+                    cuotas=cuotas if es_credito and tipo_pago.es_tarjeta_credito else 1,
+                    pagado=True if not tipo_pago.es_tarjeta_credito else False # Marcar como pagado si no es crédito
                 )
                 
                 # Guardar el consumo (esto activará el método save() del modelo)

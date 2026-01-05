@@ -47,10 +47,14 @@ def consumo_fijo_list(request):
     total_pendiente = total_consumos - total_pagado
     
     # Obtener nombre del mes para mostrar
-    mes_nombre = datetime(2000, mes_actual, 1).strftime('%B').capitalize()
+    meses_es = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+        7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    mes_nombre = meses_es.get(mes_actual, "Enero")
     
     # Generar lista de meses y años para el selector
-    meses = [(i, datetime(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+    meses = [(i, meses_es.get(i)) for i in range(1, 13)]
     años = range(timezone.now().year - 2, timezone.now().year + 3)
     
     context = {
@@ -79,7 +83,11 @@ def consumo_fijo_create(request):
     año_actual = timezone.now().year
     
     # Generar lista de meses y años para el selector
-    meses = [(i, datetime(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+    meses_es = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+        7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    meses = [(i, meses_es.get(i)) for i in range(1, 13)]
     años = range(timezone.now().year - 1, timezone.now().year + 3)
     
     if request.method == 'POST':
@@ -161,8 +169,16 @@ def consumo_fijo_update(request, pk):
     categorias = Categoria.objects.all().order_by('nombre')
     
     # Generar lista de meses y años para el selector
-    meses = [(i, datetime(2000, i, 1).strftime('%B')) for i in range(1, 13)]
-    años = range(timezone.now().year - 1, timezone.now().year + 3)
+    meses_es = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+        7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    meses = [(i, meses_es.get(i)) for i in range(1, 13)]
+    
+    mes_actual = timezone.now().month
+    año_actual = timezone.now().year
+    
+    años = range(año_actual - 1, año_actual + 3)
     
     if request.method == 'POST':
         tipo_pago_id = request.POST.get('tipo_pago')
@@ -230,6 +246,8 @@ def consumo_fijo_update(request, pk):
         'titulo': 'Editar Consumo Fijo Mensual',
         'meses': meses,
         'años': años,
+        'mes_actual': mes_actual,
+        'año_actual': año_actual,
         'fecha_pago': consumo_fijo.fecha_pago.isoformat() if consumo_fijo.fecha_pago else None
     }
     
@@ -257,9 +275,17 @@ def consumo_fijo_toggle(request, pk):
     consumo_fijo = get_object_or_404(ConsumoFijoMensual, pk=pk)
     
     # Si se intenta marcar como pagado, verificar que tenga tipo de pago
-    if not consumo_fijo.pagado and not consumo_fijo.tipo_pago:
-        messages.error(request, 'No se puede marcar como pagado un consumo sin tipo de pago asignado. Por favor edite el consumo primero.')
-        return redirect('consumo_fijo_list')
+    if not consumo_fijo.pagado:
+        if not consumo_fijo.tipo_pago:
+            messages.error(request, 'No se puede marcar como pagado un consumo sin tipo de pago asignado. Por favor edite el consumo primero.')
+            return redirect('consumo_fijo_list')
+        
+        # Verificar saldo si es tarjeta de débito
+        if consumo_fijo.tipo_pago.es_tarjeta_debito:
+            balance_actual = consumo_fijo.tipo_pago.balance
+            if balance_actual < float(consumo_fijo.monto):
+                messages.error(request, f'Saldo insuficiente en {consumo_fijo.tipo_pago.nombre}. Saldo actual: ${balance_actual:.2f}')
+                return redirect('consumo_fijo_list')
         
     consumo_fijo.pagado = not consumo_fijo.pagado
     

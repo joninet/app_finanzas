@@ -44,6 +44,16 @@
                             <p class="text-gray-500">Marca esta opción si este tipo de pago es una tarjeta de crédito para habilitar pagos en cuotas</p>
                         </div>
                     </div>
+
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" id="es_tarjeta_debito" name="es_tarjeta_debito" {% if tipo_pago.es_tarjeta_debito %}checked{% endif %}>
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="es_tarjeta_debito" class="font-medium text-gray-700">Es tarjeta de débito</label>
+                            <p class="text-gray-500">Marca esta opción si este tipo de pago es una tarjeta de débito para controlar saldo disponible</p>
+                        </div>
+                    </div>
                     
                     <div class="flex justify-between pt-4 border-t border-gray-200">
                         <a href="{% url 'tipo_pago_list' %}" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition">

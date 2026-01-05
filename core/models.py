@@ -10,8 +10,26 @@ class TipoPago(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True, null=True)
     es_tarjeta_credito = models.BooleanField(default=False)
+    es_tarjeta_debito = models.BooleanField(default=False)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    @property
+    def balance(self):
+        """Calcula el saldo disponible si es tarjeta de débito."""
+        if not self.es_tarjeta_debito:
+            return None
+        
+        from django.db.models import Sum
+        total_ingresos = self.ingresos.aggregate(models.Sum('monto'))['monto__sum'] or 0
+        
+        # Gastos diarios pagados con esta tarjeta
+        total_gastos_diarios = self.consumodiario_set.filter(pagado=True).aggregate(models.Sum('monto'))['monto__sum'] or 0
+        
+        # Gastos fijos pagados con esta tarjeta
+        total_gastos_fijos = self.consumos_fijos.filter(pagado=True).aggregate(models.Sum('monto'))['monto__sum'] or 0
+        
+        return float(total_ingresos) - float(total_gastos_diarios) - float(total_gastos_fijos)
     
     def __str__(self):
         return self.nombre
@@ -87,6 +105,7 @@ class ConsumoDiario(models.Model):
     cuotas = models.IntegerField(default=1)
     cuota_numero = models.IntegerField(default=1)
     cuota_total = models.IntegerField(default=1)
+    primera_cuota_siguiente_mes = models.BooleanField(default=False)
     consumo_original = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='cuotas_relacionadas')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
@@ -136,13 +155,25 @@ class ConsumoDiario(models.Model):
                     self.descripcion = f"Cuota 1/{self.cuotas} - {desc_base} (Compra: {fecha_compra.strftime('%d/%m/%Y')})"
                 
                 # Guardar los cambios en el registro actual (el super().save ja se llamó, pero queremos persistir estos cambios de cuota)
-                super().save(update_fields=['monto', 'cuota_numero', 'cuota_total', 'descripcion'])
+                # Si es para el mes siguiente, movemos la fecha de la cuota 1
+                if self.primera_cuota_siguiente_mes:
+                    mes_cuota = (fecha_compra.month % 12) + 1
+                    año_cuota = fecha_compra.year + (fecha_compra.month // 12)
+                    try:
+                        self.fecha = date(año_cuota, mes_cuota, min(fecha_compra.day, 28))
+                    except ValueError:
+                        self.fecha = date(año_cuota, mes_cuota, 28)
+
+                super().save(update_fields=['monto', 'cuota_numero', 'cuota_total', 'descripcion', 'fecha'])
                 
                 # Para tarjetas de crédito, generamos las cuotas RESTANTES (de la 2 en adelante)
                 for num_cuota in range(2, self.cuotas + 1):
                     # Calcular la fecha exacta para el mes/año de la cuota
                     # num_cuota-1 meses después de la compra (Cuota 2 es 1 mes después)
-                    meses_a_sumar = num_cuota - 1
+                    # Si primera_cuota_siguiente_mes es True, la cuota 1 ya es el mes siguiente
+                    offset_meses = 1 if self.primera_cuota_siguiente_mes else 0
+                    meses_a_sumar = (num_cuota - 1) + offset_meses
+                    
                     mes_cuota = ((fecha_compra.month + meses_a_sumar - 1) % 12) + 1
                     año_cuota = fecha_compra.year + ((fecha_compra.month + meses_a_sumar - 1) // 12)
                     
