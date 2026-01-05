@@ -26,16 +26,15 @@
     <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
         <div class="flex justify-between items-start">
             <div>
-                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total del Mes</p>
-                <h3 class="text-2xl font-bold text-gray-900 mt-1">${{ total_general|floatformat:2 }}</h3>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Pendiente del Mes</p>
+                <h3 class="text-2xl font-bold text-gray-900 mt-1">${{ total_general_pendiente|floatformat:2 }}</h3>
             </div>
             <div class="p-3 bg-blue-100 rounded-full text-blue-600">
                 <i class="fas fa-wallet text-xl"></i>
             </div>
         </div>
         <div class="mt-4 text-sm text-gray-600">
-            <span class="font-semibold text-blue-600">{{ total_fijos|floatformat:2 }}</span> fijos + 
-            <span class="font-semibold text-indigo-600">{{ total_tarjetas|floatformat:2 }}</span> tarjetas
+            Total: <span class="font-semibold">${{ total_general|floatformat:2 }}</span> (Fijos: {{ total_fijos|floatformat:2 }}, Tarjetas: {{ total_tarjetas|floatformat:2 }})
         </div>
     </div>
 
@@ -186,7 +185,8 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarjeta</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total a Pagar</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ver</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acción</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -201,10 +201,35 @@
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-gray-800">
                             ${{ tarjeta.total|floatformat:2 }}
                         </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {% if tarjeta.total_pendiente == 0 %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Pagado
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                Pendiente
+                            </span>
+                            {% endif %}
+                        </td>
                         <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
-                            <button onclick="abrirModalTarjeta('{{ tarjeta.tipo_pago__nombre|escapejs }}')" class="text-indigo-600 hover:text-indigo-900 transition transform hover:scale-110">
-                                <i class="fas fa-search-plus fa-lg"></i>
-                            </button>
+                            <div class="flex items-center justify-center gap-3">
+                                <button onclick="abrirModalTarjeta('{{ tarjeta.tipo_pago__nombre|escapejs }}')" class="text-indigo-600 hover:text-indigo-900 transition transform hover:scale-110" title="Ver detalle">
+                                    <i class="fas fa-search-plus fa-lg"></i>
+                                </button>
+                                
+                                {% if tarjeta.total_pendiente > 0 %}
+                                <form action="{% url 'card_bulk_payment' tarjeta.tipo_pago_id %}" method="post" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="mes" value="{{ mes_actual }}">
+                                    <input type="hidden" name="año" value="{{ año_actual }}">
+                                    <input type="hidden" name="next" value="{{ request.path }}">
+                                    <button type="submit" class="text-green-600 hover:text-green-800 transition transform hover:scale-110" title="Marcar toda la tarjeta como pagada" onclick="return confirm('¿Marcar todos los consumos de {{ tarjeta.tipo_pago__nombre|escapejs }} para este mes como pagados?')">
+                                        <i class="far fa-check-circle fa-lg"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
@@ -318,6 +343,7 @@
             categoria: "{{ consumo.categoria.nombre|escapejs }}",
             descripcion: "{{ consumo.descripcion|escapejs }}",
             comentario: "{{ consumo.comentario|default:''|escapejs }}",
+            pagado: "{{ consumo.pagado }}" === "True",
             cuota_numero: parseInt("{{ consumo.cuota_numero|default:1 }}"),
             cuota_total: parseInt("{{ consumo.cuota_total|default:1 }}"),
             monto: parseFloat("{{ consumo.monto|floatformat:2|escapejs }}".replace(',', '.'))
@@ -369,7 +395,10 @@
                         </span>
                         <div class="text-[10px] text-gray-400 mt-0.5">${restan > 0 ? 'Restan: ' + restan : 'Última cuota'}</div>
                     </td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-right font-bold text-gray-800">$${c.monto.toFixed(2)}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-right font-bold text-gray-800">
+                        <div class="${c.pagado ? 'text-green-600' : ''}">$${c.monto.toFixed(2)}</div>
+                        ${c.pagado ? '<div class="text-[9px] text-green-500"><i class="fas fa-check"></i> Pagado</div>' : ''}
+                    </td>
                 `;
                 tbody.appendChild(row);
             });

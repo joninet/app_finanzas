@@ -10,7 +10,8 @@ from .views import (
     resumen_mensual,
     consumo_tarjeta_list,
     export_data_json,
-    update_comment
+    update_comment,
+    card_bulk_payment
 )
 from .views.consumo_diario_mobile import consumo_diario_mobile
 
@@ -63,4 +64,7 @@ urlpatterns = [
     
     # Comentarios
     path('comentario/actualizar/', update_comment, name='update_comment'),
+    
+    # Pagos de Tarjeta
+    path('tarjeta/pagar/<int:tipo_pago_id>/', card_bulk_payment, name='card_bulk_payment'),
 ]

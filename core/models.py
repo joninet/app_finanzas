@@ -82,6 +82,8 @@ class ConsumoDiario(models.Model):
     descripcion = models.CharField(max_length=255, blank=True, null=True)
     comentario = models.TextField(blank=True, null=True, help_text="Comentario específico para este mes")
     es_credito = models.BooleanField(default=False)
+    pagado = models.BooleanField(default=False)
+    fecha_pago = models.DateField(null=True, blank=True)
     cuotas = models.IntegerField(default=1)
     cuota_numero = models.IntegerField(default=1)
     cuota_total = models.IntegerField(default=1)

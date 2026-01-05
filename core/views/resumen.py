@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.utils import timezone
+from django.db import models
 from django.db.models import Sum
 from ..models import ConsumoFijoMensual, ConsumoDiario
 import calendar
@@ -50,14 +51,28 @@ def resumen_mensual(request):
         es_credito=True
     ).select_related('tipo_pago', 'categoria').order_by('tipo_pago__nombre', 'fecha')
 
-    # Agrupación para la tabla resumen
-    tarjetas_resumen = consumos_tarjeta_all.values('tipo_pago__nombre').annotate(total=Sum('monto')).order_by('tipo_pago__nombre')
+    # Agrupación para la tabla resumen: incluimos ID del tipo de pago y estado pagado
+    tarjetas_resumen = consumos_tarjeta_all.values(
+        'tipo_pago_id', 
+        'tipo_pago__nombre'
+    ).annotate(
+        total=Sum('monto'),
+        total_pagado=Sum('monto', filter=models.Q(pagado=True)),
+        total_pendiente=Sum('monto', filter=models.Q(pagado=False))
+    ).order_by('tipo_pago__nombre')
+    
+    # Asegurar que los campos no sean None
+    for tarjeta in tarjetas_resumen:
+        tarjeta['total_pagado'] = tarjeta['total_pagado'] or 0
+        tarjeta['total_pendiente'] = tarjeta['total_pendiente'] or 0
     
     total_tarjetas = sum(item['total'] for item in tarjetas_resumen)
+    total_tarjetas_pendiente = sum(item['total_pendiente'] for item in tarjetas_resumen)
     
     # === Totales Generales ===
     # El "Total del Mes" ahora es Fijos + Consumos de Tarjeta
     total_general = total_fijos + total_tarjetas
+    total_general_pendiente = total_fijos_pendiente + total_tarjetas_pendiente
     
     context = {
         'titulo': f'Resumen de Pagos - {mes_nombre} {año}',
@@ -74,8 +89,10 @@ def resumen_mensual(request):
         'tarjetas_resumen': tarjetas_resumen,
         'consumos_tarjeta_all': consumos_tarjeta_all, # Para los detalles en el modal
         'total_tarjetas': total_tarjetas,
+        'total_tarjetas_pendiente': total_tarjetas_pendiente,
         
         'total_general': total_general,
+        'total_general_pendiente': total_general_pendiente,
     }
     
     return render(request, 'core/resumen/dashboard.html', context)

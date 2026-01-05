@@ -9,3 +9,4 @@ from .resumen import *
 from .consumo_tarjeta import *
 from .backup import *
 from .comment import *
+from .tarjeta_pago import *
