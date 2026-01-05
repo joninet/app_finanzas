@@ -4,7 +4,6 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from ..models import TipoPago, Categoria, Ingreso, ConsumoFijoMensual, ConsumoDiario
 
-@login_required
 def export_data_json(request):
     """
     Exporta todos los datos del usuario a un archivo JSON.
