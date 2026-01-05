@@ -114,12 +114,12 @@
                     {% for consumo in consumos_fijos %}
                     <tr class="hover:bg-gray-50 transition {% if consumo.pagado %}bg-green-50 bg-opacity-30{% endif %}">
                         <td class="px-4 py-3">
-                            <div class="text-sm font-medium text-gray-900 flex items-center">
+                            <div class="text-sm font-bold text-gray-900 flex items-center">
                                 <i class="{{ consumo.categoria.icono|default:'fa-solid fa-tag' }} mr-2 text-gray-400 w-4"></i>
-                                {{ consumo.categoria.nombre }}
+                                {% if consumo.descripcion %}{{ consumo.descripcion }}{% else %}{{ consumo.categoria.nombre }}{% endif %}
                             </div>
                             {% if consumo.descripcion %}
-                            <div class="text-xs text-gray-500 ml-6">{{ consumo.descripcion|truncatechars:40 }}</div>
+                            <div class="text-xs text-gray-500 ml-6">{{ consumo.categoria.nombre }}</div>
                             {% endif %}
                             <div id="comment-fijo-{{ consumo.id }}" class="text-[10px] text-blue-500 italic ml-6 mt-1 cursor-pointer hover:underline flex items-center group" onclick="abrirModalComentario('{{ consumo.id }}', 'fijo', '{{ consumo.comentario|escapejs }}')">
                                 <i class="fas fa-comment-dots mr-1 opacity-50 group-hover:opacity-100"></i>
@@ -356,8 +356,8 @@
                 row.innerHTML = `
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${c.fecha}</td>
                     <td class="px-4 py-2">
-                        <div class="text-sm text-gray-900 font-medium">${c.categoria}</div>
-                        <div class="text-[10px] text-gray-500 leading-tight">${c.descripcion}</div>
+                        <div class="text-sm text-gray-900 font-bold">${c.descripcion || c.categoria}</div>
+                        <div class="text-[10px] text-gray-500 leading-tight">${c.categoria}</div>
                         <div id="comment-diario-${c.id}" class="text-[10px] text-blue-500 italic mt-1 cursor-pointer hover:underline flex items-center group" onclick="abrirModalComentario('${c.id}', 'diario', '${c.comentario.replace(/'/g, "\\'")}')">
                             <i class="fas fa-comment-dots mr-1 opacity-50 group-hover:opacity-100"></i>
                             <span>${c.comentario || 'Agregar comentario...'}</span>
