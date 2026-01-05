@@ -121,10 +121,6 @@ def consumo_fijo_create(request):
                 messages.error(request, 'El mes debe estar entre 1 y 12')
                 return redirect('consumo_fijo_create')
             
-            # Verificar si ya existe un consumo fijo para esta categoría en el mismo mes/año
-            if ConsumoFijoMensual.objects.filter(categoria=categoria, mes=mes, año=año).exists():
-                messages.error(request, 'Ya existe un consumo fijo para esta categoría en el mes y año seleccionados')
-                return redirect('consumo_fijo_create')
             
             consumo_fijo = ConsumoFijoMensual(
                 tipo_pago=tipo_pago,
@@ -211,10 +207,6 @@ def consumo_fijo_update(request, pk):
                 messages.error(request, 'El mes debe estar entre 1 y 12')
                 return redirect('consumo_fijo_update', pk=pk)
             
-            # Verificar si ya existe otro consumo fijo para esta categoría en el mismo mes/año
-            if ConsumoFijoMensual.objects.filter(categoria=categoria, mes=mes, año=año).exclude(pk=pk).exists():
-                messages.error(request, 'Ya existe un consumo fijo para esta categoría en el mes y año seleccionados')
-                return redirect('consumo_fijo_update', pk=pk)
             
             consumo_fijo.tipo_pago = tipo_pago
             consumo_fijo.categoria = categoria
